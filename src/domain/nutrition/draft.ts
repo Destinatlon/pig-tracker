@@ -1,5 +1,5 @@
 import { MacroKey, NutritionPer100g } from '../models';
-import { parseNumberText, parseOptionalNonNegative, parsePositiveWeight, parseRequiredName, parseRequiredNonNegative, ParseResult } from '../numeric';
+import { FieldErrorCode, parseNumberText, parseOptionalNonNegative, parsePositiveWeight, parseRequiredName, parseRequiredNonNegative, ParseResult } from '../numeric';
 import { formatForInput } from './format';
 
 export type DraftField = 'calories' | MacroKey;
@@ -113,16 +113,10 @@ export interface ValidatedDraft {
   per100g: NutritionPer100g;
 }
 
-export interface DraftErrors {
-  name?: string;
-  weight?: string;
-  calories?: string;
-  protein?: string;
-  carbs?: string;
-  fat?: string;
-}
+export type DraftErrorField = 'name' | 'weight' | DraftField;
 
-const LABELS: Record<DraftField, string> = { calories: 'kcal', protein: 'Protein', carbs: 'Carbs', fat: 'Fat' };
+/** Validation outcome per field as error codes; the UI renders translated messages. */
+export type DraftErrors = Partial<Record<DraftErrorField, FieldErrorCode>>;
 
 /** Validates and normalizes a draft to per-100-g values, preferring the full-precision basis. */
 export function validateDraft(draft: NutritionDraft, options: { requireName?: boolean } = {}): { ok: true; value: ValidatedDraft } | { ok: false; errors: DraftErrors } {
@@ -131,11 +125,11 @@ export function validateDraft(draft: NutritionDraft, options: { requireName?: bo
   if (options.requireName !== false && !name.ok) errors.name = name.error;
   const weight = parsePositiveWeight(draft.weightText);
   if (!weight.ok) errors.weight = weight.error;
-  const calories = parseRequiredNonNegative(draft.texts.calories, LABELS.calories);
+  const calories = parseRequiredNonNegative(draft.texts.calories);
   if (!calories.ok) errors.calories = calories.error;
   const macros: Partial<Record<MacroKey, number | null>> = {};
   for (const field of ['protein', 'carbs', 'fat'] as const) {
-    const parsed = parseOptionalNonNegative(draft.texts[field], LABELS[field]);
+    const parsed = parseOptionalNonNegative(draft.texts[field]);
     if (!parsed.ok) errors[field] = parsed.error;
     else macros[field] = parsed.value;
   }
@@ -175,13 +169,13 @@ export function per100gTextsFrom(per100g: NutritionPer100g | null): Per100gTexts
 
 export function parsePer100gTexts(texts: Per100gTexts): { ok: true; value: NutritionPer100g } | { ok: false; errors: DraftErrors } {
   const errors: DraftErrors = {};
-  const calories = parseRequiredNonNegative(texts.calories, 'kcal');
+  const calories = parseRequiredNonNegative(texts.calories);
   if (!calories.ok) errors.calories = calories.error;
-  const protein = parseOptionalNonNegative(texts.protein, 'Protein');
+  const protein = parseOptionalNonNegative(texts.protein);
   if (!protein.ok) errors.protein = protein.error;
-  const carbs = parseOptionalNonNegative(texts.carbs, 'Carbs');
+  const carbs = parseOptionalNonNegative(texts.carbs);
   if (!carbs.ok) errors.carbs = carbs.error;
-  const fat = parseOptionalNonNegative(texts.fat, 'Fat');
+  const fat = parseOptionalNonNegative(texts.fat);
   if (!fat.ok) errors.fat = fat.error;
   if (!calories.ok || !protein.ok || !carbs.ok || !fat.ok) return { ok: false, errors };
   return {

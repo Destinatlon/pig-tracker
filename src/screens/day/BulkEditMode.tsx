@@ -18,6 +18,7 @@ import {
 } from '../../domain/nutrition/draft';
 import { sanitizeNumericText } from '../../domain/numeric';
 import { radius, spacing, typography } from '../../theme/tokens';
+import { useI18n } from '../../i18n';
 import { useTheme } from '../../theme/ThemeProvider';
 
 interface BulkRow {
@@ -47,6 +48,7 @@ function splitName(row: BulkRow, typed: string): { productName: string; variantN
 /** Whole-day direct edit mode. The entire session is one draft committed only by Save changes. */
 export function BulkEditMode({ date, entries, onSaved, onCancel }: Props) {
   const { colors } = useTheme();
+  const { t } = useI18n();
   const insets = useSafeAreaInsets();
   const [rows, setRows] = useState<BulkRow[]>(() =>
     entries.map((entry) => ({
@@ -67,12 +69,12 @@ export function BulkEditMode({ date, entries, onSaved, onCancel }: Props) {
       onCancel();
       return true;
     }
-    Alert.alert('Discard unsaved changes?', undefined, [
-      { text: 'Keep editing', style: 'cancel' },
-      { text: 'Discard', style: 'destructive', onPress: onCancel },
+    Alert.alert(t('common.discardChangesTitle'), undefined, [
+      { text: t('common.keepEditing'), style: 'cancel' },
+      { text: t('common.discard'), style: 'destructive', onPress: onCancel },
     ]);
     return true;
-  }, [dirty, onCancel]);
+  }, [dirty, onCancel, t]);
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', requestCancel);
@@ -115,7 +117,7 @@ export function BulkEditMode({ date, entries, onSaved, onCancel }: Props) {
     });
     if (hasErrors) {
       setRows(validated);
-      Alert.alert('Check the highlighted rows', 'Every entry needs a name, a weight above zero and calories.');
+      Alert.alert(t('bulk.checkRowsTitle'), t('bulk.checkRowsBody'));
       return;
     }
     setSaving(true);
@@ -124,7 +126,7 @@ export function BulkEditMode({ date, entries, onSaved, onCancel }: Props) {
       onSaved();
     } catch (error) {
       setSaving(false);
-      Alert.alert('Could not save changes', String(error));
+      Alert.alert(t('bulk.couldNotSave'), String(error));
     }
   };
 
@@ -144,14 +146,14 @@ export function BulkEditMode({ date, entries, onSaved, onCancel }: Props) {
             onRemove={() => removeRow(item)}
           />
         )}
-        ListEmptyComponent={<Text style={[styles.empty, { color: colors.textSecondary }]}>No entries. Add one below.</Text>}
+        ListEmptyComponent={<Text style={[styles.empty, { color: colors.textSecondary }]}>{t('bulk.empty')}</Text>}
       />
       <View style={[styles.addBar, { borderTopColor: colors.divider }]}>
-        <Button title="+ Add entry" variant="secondary" compact onPress={addRow} accessibilityLabel="Add entry" />
+        <Button title={t('bulk.addEntry')} variant="secondary" compact onPress={addRow} accessibilityLabel={t('bulk.addEntryA11y')} />
       </View>
       <View style={[styles.footer, { backgroundColor: colors.surface, borderTopColor: colors.divider, paddingBottom: insets.bottom + spacing.md }]}>
-        <Button title="Discard" variant="secondary" onPress={requestCancel} style={styles.footerButton} />
-        <Button title="Save changes" onPress={save} loading={saving} style={styles.footerButton} />
+        <Button title={t('common.discard')} variant="secondary" onPress={requestCancel} style={styles.footerButton} />
+        <Button title={t('bulk.saveChanges')} onPress={save} loading={saving} style={styles.footerButton} />
       </View>
     </KeyboardAvoidingView>
   );
@@ -167,8 +169,15 @@ interface RowProps {
 
 function BulkRowView({ row, onName, onWeight, onValue, onRemove }: RowProps) {
   const { colors } = useTheme();
+  const { t, fieldError } = useI18n();
   const { draft, errors } = row;
-  const firstError = errors.name ?? errors.weight ?? errors.calories ?? errors.protein ?? errors.carbs ?? errors.fat;
+  const firstError =
+    fieldError(t('field.name'), errors.name) ??
+    fieldError(t('field.weight'), errors.weight) ??
+    fieldError(t('field.calories'), errors.calories) ??
+    fieldError(t('macro.protein'), errors.protein) ??
+    fieldError(t('macro.carbs'), errors.carbs) ??
+    fieldError(t('macro.fat'), errors.fat);
   return (
     <View style={[styles.row, { backgroundColor: colors.surface, borderColor: firstError ? colors.danger : colors.divider }]}>
       <View style={styles.line}>
@@ -176,27 +185,27 @@ function BulkRowView({ row, onName, onWeight, onValue, onRemove }: RowProps) {
           value={draft.name}
           onChangeText={onName}
           placeholder="?"
-          accessibilityLabel="Name"
+          accessibilityLabel={t('field.name')}
           style={styles.nameInput}
           invalid={!!errors.name}
           autoCapitalize="sentences"
         />
-        <Text style={[styles.inlineLabel, { color: colors.textSecondary }]}>weight</Text>
-        <InlineInput value={draft.weightText} onChangeText={onWeight} numeric accessibilityLabel="Weight in grams" invalid={!!errors.weight} />
-        <Text style={[styles.unit, { color: colors.textSecondary }]}>g</Text>
-        <Pressable onPress={onRemove} hitSlop={8} accessibilityRole="button" accessibilityLabel="Delete entry" style={styles.remove}>
+        <Text style={[styles.inlineLabel, { color: colors.textSecondary }]}>{t('bulk.weightLabel')}</Text>
+        <InlineInput value={draft.weightText} onChangeText={onWeight} numeric accessibilityLabel={t('bulk.weightA11y')} invalid={!!errors.weight} />
+        <Text style={[styles.unit, { color: colors.textSecondary }]}>{t('common.grams')}</Text>
+        <Pressable onPress={onRemove} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('day.deleteEntry')} style={styles.remove}>
           <MaterialCommunityIcons name="close" size={20} color={colors.textSecondary} />
         </Pressable>
       </View>
       <View style={styles.line}>
-        <Text style={[styles.inlineLabel, { color: colors.textSecondary }]}>kcal</Text>
-        <InlineInput value={draft.texts.calories} onChangeText={(t) => onValue('calories', t)} numeric accessibilityLabel="Calories" invalid={!!errors.calories} />
-        <Text style={[styles.inlineLabel, { color: colors.textSecondary }]}>P</Text>
-        <InlineInput value={draft.texts.protein} onChangeText={(t) => onValue('protein', t)} numeric accessibilityLabel="Protein" invalid={!!errors.protein} />
-        <Text style={[styles.inlineLabel, { color: colors.textSecondary }]}>C</Text>
-        <InlineInput value={draft.texts.carbs} onChangeText={(t) => onValue('carbs', t)} numeric accessibilityLabel="Carbs" invalid={!!errors.carbs} />
-        <Text style={[styles.inlineLabel, { color: colors.textSecondary }]}>F</Text>
-        <InlineInput value={draft.texts.fat} onChangeText={(t) => onValue('fat', t)} numeric accessibilityLabel="Fat" invalid={!!errors.fat} />
+        <Text style={[styles.inlineLabel, { color: colors.textSecondary }]}>{t('common.kcal')}</Text>
+        <InlineInput value={draft.texts.calories} onChangeText={(text) => onValue('calories', text)} numeric accessibilityLabel={t('field.calories')} invalid={!!errors.calories} />
+        <Text style={[styles.inlineLabel, { color: colors.textSecondary }]}>{t('macro.p')}</Text>
+        <InlineInput value={draft.texts.protein} onChangeText={(text) => onValue('protein', text)} numeric accessibilityLabel={t('macro.protein')} invalid={!!errors.protein} />
+        <Text style={[styles.inlineLabel, { color: colors.textSecondary }]}>{t('macro.c')}</Text>
+        <InlineInput value={draft.texts.carbs} onChangeText={(text) => onValue('carbs', text)} numeric accessibilityLabel={t('macro.carbs')} invalid={!!errors.carbs} />
+        <Text style={[styles.inlineLabel, { color: colors.textSecondary }]}>{t('macro.f')}</Text>
+        <InlineInput value={draft.texts.fat} onChangeText={(text) => onValue('fat', text)} numeric accessibilityLabel={t('macro.fat')} invalid={!!errors.fat} />
       </View>
       {firstError ? <Text style={[styles.error, { color: colors.danger }]}>{firstError}</Text> : null}
     </View>

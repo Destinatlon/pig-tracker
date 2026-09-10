@@ -16,6 +16,7 @@ src/db          database.ts (connection + migrations), repositories/* (all SQL l
 src/screens     day/, add/, products/, settings/ — screens own drafts, call repositories on explicit Save
 src/components  shared primitives (Button, TextField/NumberField, BottomSheet, Snackbar, Chip, Fab, ...)
 src/theme       semantic colour tokens + ThemeProvider (system/light/dark)
+src/i18n        en.ts (source of truth) + uk.ts dictionaries, I18nProvider/useI18n, plural rules; a test enforces key parity
 src/notifications  daily reminder scheduling
 ```
 
@@ -25,6 +26,7 @@ src/notifications  daily reminder scheduling
 - Values typed by users are for the consumed amount; normalize to per-100 g via the draft `basis` (`src/domain/nutrition/draft.ts`) so repeated weight edits do not accumulate rounding.
 - Explicit Save/Discard; no auto-save, no duplicate-entry action, no meal grouping, no bottom navigation.
 - Everything must work in airplane mode.
+- No hard-coded user-facing strings: add a key to `src/i18n/en.ts` and `uk.ts`, use `t('key')` (or `tn` for plurals). Validation returns error codes; `fieldError(label, code)` renders them. Dates go through `longDate`/`shortDate`/`relativeDate` from `useI18n`.
 
 ## Commands
 - `npm test` — jest (domain logic), `npm run typecheck` — tsc.

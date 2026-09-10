@@ -3,44 +3,77 @@ import Constants from 'expo-constants';
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ThemePreference } from '../../domain/models';
+import { createTranslator, resolveLocale, useI18n } from '../../i18n';
+import { LanguagePreference, LOCALE_NAMES, SUPPORTED_LOCALES } from '../../i18n/types';
+import { rescheduleReminderIfEnabled } from '../../notifications/reminders';
 import { spacing, typography } from '../../theme/tokens';
 import { useTheme } from '../../theme/ThemeProvider';
 
-const THEMES: { key: ThemePreference; label: string }[] = [
-  { key: 'system', label: 'System' },
-  { key: 'light', label: 'Light' },
-  { key: 'dark', label: 'Dark' },
-];
+const THEMES: ThemePreference[] = ['system', 'light', 'dark'];
+const LANGUAGES: LanguagePreference[] = ['system', ...SUPPORTED_LOCALES];
 
 export function AppTab() {
   const { colors, preference, setPreference } = useTheme();
-  const version = Constants.expoConfig?.version ?? 'unknown';
+  const i18n = useI18n();
+  const { t } = i18n;
+  const version = Constants.expoConfig?.version ?? '—';
+
+  const themeLabel = (theme: ThemePreference) => (theme === 'system' ? t('app.themeSystem') : theme === 'light' ? t('app.themeLight') : t('app.themeDark'));
+  const languageLabel = (language: LanguagePreference) =>
+    language === 'system' ? `${t('app.languageSystem')} (${LOCALE_NAMES[resolveLocale('system')]})` : LOCALE_NAMES[language];
+
+  const changeLanguage = async (language: LanguagePreference) => {
+    await i18n.setPreference(language);
+    // The scheduled reminder carries fixed text, so refresh it in the new language.
+    const next = createTranslator(resolveLocale(language)).t;
+    rescheduleReminderIfEnabled({ title: next('reminder.notificationTitle'), body: next('reminder.notificationBody') }).catch(() => undefined);
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <Text style={[styles.section, { color: colors.textSecondary }]}>Theme</Text>
-      {THEMES.map((theme) => {
-        const selected = theme.key === preference;
-        return (
-          <Pressable
-            key={theme.key}
-            onPress={() => setPreference(theme.key)}
-            accessibilityRole="radio"
-            accessibilityState={{ checked: selected }}
-            accessibilityLabel={`${theme.label} theme`}
-            style={({ pressed }) => [styles.row, { borderBottomColor: colors.divider, opacity: pressed ? 0.6 : 1 }]}
-          >
-            <Text style={[styles.label, { color: colors.textPrimary }]}>{theme.label}</Text>
-            <MaterialCommunityIcons name={selected ? 'radiobox-marked' : 'radiobox-blank'} size={22} color={selected ? colors.accent : colors.textSecondary} />
-          </Pressable>
-        );
-      })}
-      <Text style={[styles.section, styles.sectionSpaced, { color: colors.textSecondary }]}>About</Text>
+      <Text style={[styles.section, { color: colors.textSecondary }]}>{t('app.language')}</Text>
+      {LANGUAGES.map((language) => (
+        <RadioRow
+          key={language}
+          label={languageLabel(language)}
+          accessibilityLabel={t('app.languageA11y', { language: languageLabel(language) })}
+          selected={language === i18n.preference}
+          onPress={() => changeLanguage(language)}
+        />
+      ))}
+      <Text style={[styles.section, styles.sectionSpaced, { color: colors.textSecondary }]}>{t('app.theme')}</Text>
+      {THEMES.map((theme) => (
+        <RadioRow
+          key={theme}
+          label={themeLabel(theme)}
+          accessibilityLabel={t('app.themeA11y', { theme: themeLabel(theme) })}
+          selected={theme === preference}
+          onPress={() => setPreference(theme)}
+        />
+      ))}
+      <Text style={[styles.section, styles.sectionSpaced, { color: colors.textSecondary }]}>{t('app.about')}</Text>
       <View style={[styles.row, { borderBottomColor: colors.divider }]}>
-        <Text style={[styles.label, { color: colors.textPrimary }]}>App version</Text>
+        <Text style={[styles.label, { color: colors.textPrimary }]}>{t('app.version')}</Text>
         <Text style={[styles.label, { color: colors.textSecondary }]}>{version}</Text>
       </View>
-      <Text style={[styles.hint, { color: colors.textSecondary }]}>All data stays on this device. No account, no internet required.</Text>
+      <Text style={[styles.hint, { color: colors.textSecondary }]}>{t('app.privacy')}</Text>
     </ScrollView>
+  );
+}
+
+function RadioRow({ label, accessibilityLabel, selected, onPress }: { label: string; accessibilityLabel: string; selected: boolean; onPress: () => void }) {
+  const { colors } = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="radio"
+      accessibilityState={{ checked: selected }}
+      accessibilityLabel={accessibilityLabel}
+      style={({ pressed }) => [styles.row, { borderBottomColor: colors.divider, opacity: pressed ? 0.6 : 1 }]}
+    >
+      <Text style={[styles.label, { color: colors.textPrimary }]}>{label}</Text>
+      <MaterialCommunityIcons name={selected ? 'radiobox-marked' : 'radiobox-blank'} size={22} color={selected ? colors.accent : colors.textSecondary} />
+    </Pressable>
   );
 }
 

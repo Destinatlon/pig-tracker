@@ -6,11 +6,11 @@ import { NutritionDraftFields } from '../../components/NutritionDraftFields';
 import { useSnackbar } from '../../components/Snackbar';
 import { NumberField } from '../../components/TextField';
 import { insertEntry } from '../../db/repositories/dayEntriesRepo';
-import { describeDate } from '../../domain/dates';
 import { DateKey, LibraryItem, libraryItemDisplayName } from '../../domain/models';
 import { sameNutritionPer100g } from '../../domain/nutrition/calculations';
 import { createDraftFromPer100g, NutritionDraft, DraftErrors, updateDraftWeight, validateDraft } from '../../domain/nutrition/draft';
 import { formatCalories, formatMacro } from '../../domain/nutrition/format';
+import { useI18n } from '../../i18n';
 import { spacing, typography } from '../../theme/tokens';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useLibrarySave } from './LibrarySaveProvider';
@@ -25,6 +25,7 @@ interface Props {
 /** Small sheet: blank weight, live calculated macros, optional override for the consumed amount. */
 export function SavedAddSheet({ item, date, onClose, onAdded }: Props) {
   const { colors } = useTheme();
+  const { t, relativeDate, fieldError } = useI18n();
   const snackbar = useSnackbar();
   const librarySave = useLibrarySave();
   const [draft, setDraft] = useState<NutritionDraft>(() => createDraftFromPer100g(libraryItemDisplayName(item), item, null));
@@ -32,7 +33,7 @@ export function SavedAddSheet({ item, date, onClose, onAdded }: Props) {
   const [errors, setErrors] = useState<DraftErrors>({});
   const [saving, setSaving] = useState(false);
 
-  const calculated = `${draft.texts.calories === '' ? '?' : formatCalories(Number(draft.texts.calories))} kcal · P ${valueOrUnknown(draft.texts.protein)} · C ${valueOrUnknown(draft.texts.carbs)} · F ${valueOrUnknown(draft.texts.fat)}`;
+  const calculated = `${draft.texts.calories === '' ? '?' : formatCalories(Number(draft.texts.calories))} ${t('common.kcal')} · ${t('macro.p')} ${valueOrUnknown(draft.texts.protein)} · ${t('macro.c')} ${valueOrUnknown(draft.texts.carbs)} · ${t('macro.f')} ${valueOrUnknown(draft.texts.fat)}`;
 
   const add = async () => {
     if (saving) return;
@@ -54,24 +55,24 @@ export function SavedAddSheet({ item, date, onClose, onAdded }: Props) {
       });
       onAdded();
       if (sameNutritionPer100g(result.value.per100g, item)) {
-        snackbar.show({ message: `Added to ${describeDate(date)}` });
+        snackbar.show({ message: t('add.addedTo', { date: relativeDate(date) }) });
       } else {
         snackbar.show({
-          message: 'Added with different values',
-          actionLabel: 'Save as variant',
+          message: t('add.addedDifferent'),
+          actionLabel: t('add.saveAsVariant'),
           onAction: () => librarySave.openSaveAsVariant(entry, item),
         });
       }
     } catch (error) {
       setSaving(false);
-      Alert.alert('Could not add entry', String(error));
+      Alert.alert(t('error.couldNotAdd'), String(error));
     }
   };
 
   return (
-    <BottomSheet visible onRequestClose={onClose} title={libraryItemDisplayName(item)} footer={<Button title="Add" onPress={add} loading={saving} style={styles.footerButton} />}>
+    <BottomSheet visible onRequestClose={onClose} title={libraryItemDisplayName(item)} footer={<Button title={t('common.add')} onPress={add} loading={saving} style={styles.footerButton} />}>
       <Text style={[styles.per100, { color: colors.textSecondary }]}>
-        Per 100 g: {formatCalories(item.caloriesPer100g)} kcal · P {formatMacro(item.proteinPer100g)} · C {formatMacro(item.carbsPer100g)} · F {formatMacro(item.fatPer100g)}
+        {t('common.per100g')}: {formatCalories(item.caloriesPer100g)} {t('common.kcal')} · {t('macro.p')} {formatMacro(item.proteinPer100g)} · {t('macro.c')} {formatMacro(item.carbsPer100g)} · {t('macro.f')} {formatMacro(item.fatPer100g)}
       </Text>
       {editing ? (
         <NutritionDraftFields
@@ -86,22 +87,22 @@ export function SavedAddSheet({ item, date, onClose, onAdded }: Props) {
       ) : (
         <View>
           <NumberField
-            label="Weight"
+            label={t('field.weight')}
             required
-            unit="g"
+            unit={t('common.grams')}
             value={draft.weightText}
             onChangeText={(text) => {
               setErrors({});
               setDraft(updateDraftWeight(draft, text));
             }}
-            error={errors.weight}
+            error={fieldError(t('field.weight'), errors.weight)}
             autoFocus
           />
           <Text style={[styles.calculated, { color: colors.textPrimary }]} accessibilityLiveRegion="polite">
             {calculated}
           </Text>
-          <Pressable onPress={() => setEditing(true)} hitSlop={8} accessibilityRole="button" accessibilityLabel="Edit macros for this amount" style={styles.link}>
-            <Text style={[styles.linkText, { color: colors.accent }]}>Edit macros</Text>
+          <Pressable onPress={() => setEditing(true)} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('add.editMacrosA11y')} style={styles.link}>
+            <Text style={[styles.linkText, { color: colors.accent }]}>{t('add.editMacros')}</Text>
           </Pressable>
         </View>
       )}

@@ -10,6 +10,7 @@ import { formatTimeOfDay } from '../../domain/dates';
 import { DayEntry, entryDisplayName } from '../../domain/models';
 import { createDraftFromPer100g, DraftErrors, NutritionDraft, validateDraft } from '../../domain/nutrition/draft';
 import { spacing, typography } from '../../theme/tokens';
+import { useI18n } from '../../i18n';
 import { useTheme } from '../../theme/ThemeProvider';
 
 interface Props {
@@ -29,6 +30,7 @@ function splitName(entry: DayEntry, typed: string): { productName: string; varia
 /** Immediate-edit bottom sheet for one day entry. Saves only on explicit Save. */
 export function EntryEditSheet({ entry, onClose, onSaved, onCopyToDate, onDelete }: Props) {
   const { colors } = useTheme();
+  const { t } = useI18n();
   const [draft, setDraft] = useState<NutritionDraft>(() => createDraftFromPer100g(entryDisplayName(entry), entry, entry.weightGrams));
   const [dirty, setDirty] = useState(false);
   const [errors, setErrors] = useState<DraftErrors>({});
@@ -45,9 +47,9 @@ export function EntryEditSheet({ entry, onClose, onSaved, onCopyToDate, onDelete
       onClose();
       return;
     }
-    Alert.alert('Discard unsaved changes?', undefined, [
-      { text: 'Keep editing', style: 'cancel' },
-      { text: 'Discard', style: 'destructive', onPress: onClose },
+    Alert.alert(t('common.discardChangesTitle'), undefined, [
+      { text: t('common.keepEditing'), style: 'cancel' },
+      { text: t('common.discard'), style: 'destructive', onPress: onClose },
     ]);
   };
 
@@ -64,7 +66,7 @@ export function EntryEditSheet({ entry, onClose, onSaved, onCopyToDate, onDelete
       onSaved();
     } catch (error) {
       setSaving(false);
-      Alert.alert('Could not save', String(error));
+      Alert.alert(t('error.couldNotSave'), String(error));
     }
   };
 
@@ -72,23 +74,23 @@ export function EntryEditSheet({ entry, onClose, onSaved, onCopyToDate, onDelete
     <BottomSheet
       visible
       onRequestClose={requestClose}
-      title="Edit entry"
-      headerRight={<IconButton icon="dots-vertical" accessibilityLabel="More actions" onPress={() => setMenuOpen(true)} />}
+      title={t('entry.editTitle')}
+      headerRight={<IconButton icon="dots-vertical" accessibilityLabel={t('common.moreActions')} onPress={() => setMenuOpen(true)} />}
       footer={
         <>
-          <Button title="Discard" variant="secondary" onPress={requestClose} style={styles.footerButton} />
-          <Button title="Save" onPress={save} loading={saving} style={styles.footerButton} />
+          <Button title={t('common.discard')} variant="secondary" onPress={requestClose} style={styles.footerButton} />
+          <Button title={t('common.save')} onPress={save} loading={saving} style={styles.footerButton} />
         </>
       }
     >
-      <Text style={[styles.meta, { color: colors.textSecondary }]}>Added at {formatTimeOfDay(entry.createdAt)}</Text>
-      <NutritionDraftFields draft={draft} onChange={change} errors={errors} nameLabel="Name" />
+      <Text style={[styles.meta, { color: colors.textSecondary }]}>{t('entry.addedAt', { time: formatTimeOfDay(entry.createdAt) })}</Text>
+      <NutritionDraftFields draft={draft} onChange={change} errors={errors} />
       <MenuSheet
         visible={menuOpen}
         onRequestClose={() => setMenuOpen(false)}
         items={[
-          { key: 'copy', label: 'Copy to date', icon: 'calendar-export', onPress: () => onCopyToDate(entry) },
-          { key: 'delete', label: 'Delete', icon: 'trash-can-outline', destructive: true, onPress: () => onDelete(entry) },
+          { key: 'copy', label: t('entry.copyToDate'), icon: 'calendar-export', onPress: () => onCopyToDate(entry) },
+          { key: 'delete', label: t('common.delete'), icon: 'trash-can-outline', destructive: true, onPress: () => onDelete(entry) },
         ]}
       />
     </BottomSheet>

@@ -3,6 +3,7 @@ import { getDb } from '../database';
 
 export const SETTING_KEYS = {
   theme: 'theme',
+  language: 'language',
   reminderEnabled: 'reminder_enabled',
   reminderTime: 'reminder_time',
   reminderNotificationId: 'reminder_notification_id',
@@ -29,6 +30,17 @@ export async function getThemePreference(): Promise<ThemePreference> {
 
 export async function setThemePreference(preference: ThemePreference): Promise<void> {
   await setSetting(SETTING_KEYS.theme, preference);
+}
+
+export type LanguagePreference = 'system' | 'en' | 'uk';
+
+export async function getLanguagePreference(): Promise<LanguagePreference> {
+  const value = await getSetting(SETTING_KEYS.language);
+  return value === 'en' || value === 'uk' ? value : 'system';
+}
+
+export async function setLanguagePreference(preference: LanguagePreference): Promise<void> {
+  await setSetting(SETTING_KEYS.language, preference);
 }
 
 const DEFAULT_REMINDER: ReminderSettings = { enabled: false, hour: 21, minute: 0 };

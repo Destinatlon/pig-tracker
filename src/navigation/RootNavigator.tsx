@@ -6,6 +6,7 @@ import { AddProductScreen } from '../screens/add/AddProductScreen';
 import { DayScreen } from '../screens/day/DayScreen';
 import { ProductsScreen } from '../screens/products/ProductsScreen';
 import { SettingsScreen } from '../screens/settings/SettingsScreen';
+import { useI18n } from '../i18n';
 import { useTheme } from '../theme/ThemeProvider';
 import { DrawerContent } from './DrawerContent';
 import { DrawerParamList, RootStackParamList } from './types';
@@ -15,6 +16,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 function MainDrawer() {
   const { colors } = useTheme();
+  const { t } = useI18n();
   return (
     <Drawer.Navigator
       initialRouteName="Day"
@@ -29,9 +31,9 @@ function MainDrawer() {
         drawerLabelStyle: { fontSize: 15 },
       }}
     >
-      <Drawer.Screen name="Day" component={DayScreen} options={{ title: 'Day' }} />
-      <Drawer.Screen name="Products" component={ProductsScreen} options={{ title: 'Products' }} />
-      <Drawer.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
+      <Drawer.Screen name="Day" component={DayScreen} options={{ title: t('nav.day') }} />
+      <Drawer.Screen name="Products" component={ProductsScreen} options={{ title: t('nav.products') }} />
+      <Drawer.Screen name="Settings" component={SettingsScreen} options={{ title: t('nav.settings') }} />
     </Drawer.Navigator>
   );
 }

@@ -7,6 +7,7 @@ import { TextField } from '../../components/TextField';
 import { addVariant } from '../../db/repositories/productsRepo';
 import { DraftErrors, parsePer100gTexts, Per100gTexts, per100gTextsFrom } from '../../domain/nutrition/draft';
 import { parseRequiredName } from '../../domain/numeric';
+import { useI18n } from '../../i18n';
 import { spacing, typography } from '../../theme/tokens';
 import { useTheme } from '../../theme/ThemeProvider';
 
@@ -20,6 +21,7 @@ interface Props {
 /** Compact Add Variant sheet: name plus per-100 g values. Product and category are inherited. */
 export function VariantSheet({ productId, productName, onClose, onCreated }: Props) {
   const { colors } = useTheme();
+  const { t, fieldError } = useI18n();
   const [name, setName] = useState('');
   const [texts, setTexts] = useState<Per100gTexts>(() => per100gTextsFrom(null));
   const [errors, setErrors] = useState<DraftErrors>({});
@@ -31,15 +33,15 @@ export function VariantSheet({ productId, productName, onClose, onCreated }: Pro
       onClose();
       return;
     }
-    Alert.alert('Discard this variant?', undefined, [
-      { text: 'Keep editing', style: 'cancel' },
-      { text: 'Discard', style: 'destructive', onPress: onClose },
+    Alert.alert(t('products.discardVariant'), undefined, [
+      { text: t('common.keepEditing'), style: 'cancel' },
+      { text: t('common.discard'), style: 'destructive', onPress: onClose },
     ]);
   };
 
   const save = async () => {
     if (saving) return;
-    const parsedName = parseRequiredName(name, 'Variant name');
+    const parsedName = parseRequiredName(name);
     const parsed = parsePer100gTexts(texts);
     if (!parsedName.ok || !parsed.ok) {
       setErrors({ ...(parsed.ok ? {} : parsed.errors), ...(parsedName.ok ? {} : { name: parsedName.error }) });
@@ -52,7 +54,7 @@ export function VariantSheet({ productId, productName, onClose, onCreated }: Pro
       onClose();
     } catch (error) {
       setSaving(false);
-      Alert.alert('Could not add variant', String(error));
+      Alert.alert(t('products.couldNotAddVariant'), String(error));
     }
   };
 
@@ -60,27 +62,27 @@ export function VariantSheet({ productId, productName, onClose, onCreated }: Pro
     <BottomSheet
       visible
       onRequestClose={requestClose}
-      title="Add variant"
+      title={t('products.addVariant')}
       footer={
         <>
-          <Button title="Discard" variant="secondary" onPress={requestClose} style={styles.footerButton} />
-          <Button title="Save" onPress={save} loading={saving} style={styles.footerButton} />
+          <Button title={t('common.discard')} variant="secondary" onPress={requestClose} style={styles.footerButton} />
+          <Button title={t('common.save')} onPress={save} loading={saving} style={styles.footerButton} />
         </>
       }
     >
       <Text style={[styles.product, { color: colors.textSecondary }]}>{productName}</Text>
       <TextField
-        label="Variant name"
+        label={t('field.variantName')}
         required
         value={name}
         onChangeText={(text) => {
           setName(text);
           setErrors({});
         }}
-        error={errors.name}
+        error={fieldError(t('field.variantName'), errors.name)}
         autoFocus
         autoCapitalize="sentences"
-        placeholder="e.g. Company A 2.5%"
+        placeholder={t('products.variantPlaceholder')}
       />
       <Per100gFields
         texts={texts}

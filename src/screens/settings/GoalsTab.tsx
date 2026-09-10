@@ -8,7 +8,8 @@ import { getGoalForDate, saveGoalEffectiveFrom } from '../../db/repositories/goa
 import { todayKey } from '../../domain/dates';
 import { GoalSettings, MacroKey } from '../../domain/models';
 import { formatForInput } from '../../domain/nutrition/format';
-import { parseRequiredNonNegative } from '../../domain/numeric';
+import { FieldErrorCode, parseRequiredNonNegative } from '../../domain/numeric';
+import { useI18n } from '../../i18n';
 import { spacing, typography } from '../../theme/tokens';
 import { useTheme } from '../../theme/ThemeProvider';
 
@@ -17,24 +18,25 @@ interface MacroGoalState {
   text: string;
 }
 
-const MACROS: { key: MacroKey; label: string }[] = [
-  { key: 'protein', label: 'Protein' },
-  { key: 'carbs', label: 'Carbohydrates' },
-  { key: 'fat', label: 'Fat' },
-];
 
 /** Daily targets. Saving creates a goal effective from today; earlier days keep their own targets. */
 export function GoalsTab() {
   const { colors } = useTheme();
+  const { t, fieldError } = useI18n();
   const insets = useSafeAreaInsets();
   const snackbar = useSnackbar();
+  const MACROS: { key: MacroKey; label: string }[] = [
+    { key: 'protein', label: t('macro.protein') },
+    { key: 'carbs', label: t('macro.carbohydrates') },
+    { key: 'fat', label: t('macro.fat') },
+  ];
   const [caloriesText, setCaloriesText] = useState('');
   const [macros, setMacros] = useState<Record<MacroKey, MacroGoalState>>({
     protein: { enabled: false, text: '' },
     carbs: { enabled: false, text: '' },
     fat: { enabled: false, text: '' },
   });
-  const [errors, setErrors] = useState<Partial<Record<'calories' | MacroKey, string>>>({});
+  const [errors, setErrors] = useState<Partial<Record<'calories' | MacroKey, FieldErrorCode>>>({});
   const [loaded, setLoaded] = useState<GoalSettings | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -55,12 +57,12 @@ export function GoalsTab() {
   const save = async () => {
     if (saving) return;
     const nextErrors: typeof errors = {};
-    const calories = parseRequiredNonNegative(caloriesText, 'Calories');
+    const calories = parseRequiredNonNegative(caloriesText);
     if (!calories.ok) nextErrors.calories = calories.error;
     const values: Record<MacroKey, number | null> = { protein: null, carbs: null, fat: null };
-    for (const { key, label } of MACROS) {
+    for (const { key } of MACROS) {
       if (!macros[key].enabled) continue;
-      const parsed = parseRequiredNonNegative(macros[key].text, label);
+      const parsed = parseRequiredNonNegative(macros[key].text);
       if (!parsed.ok) nextErrors[key] = parsed.error;
       else values[key] = parsed.value;
     }
@@ -71,9 +73,9 @@ export function GoalsTab() {
     setSaving(true);
     try {
       await saveGoalEffectiveFrom(todayKey(), { calories: calories.value, ...values });
-      snackbar.show({ message: 'Goals saved from today onwards' });
+      snackbar.show({ message: t('goals.saved') });
     } catch (error) {
-      Alert.alert('Could not save goals', String(error));
+      Alert.alert(t('goals.couldNotSave'), String(error));
     } finally {
       setSaving(false);
     }
@@ -83,54 +85,54 @@ export function GoalsTab() {
     <KeyboardAvoidingView style={styles.container} behavior="padding">
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
         <NumberField
-          label="Daily calories"
+          label={t('goals.dailyCalories')}
           required
-          unit="kcal"
+          unit={t('common.kcal')}
           value={caloriesText}
           onChangeText={(text) => {
             setCaloriesText(text);
             setErrors({});
           }}
-          error={errors.calories}
+          error={fieldError(t('field.calories'), errors.calories)}
         />
         {MACROS.map(({ key, label }) => (
           <View key={key} style={[styles.macroRow, { borderTopColor: colors.divider }]}>
             <View style={styles.macroHeader}>
-              <Text style={[styles.macroLabel, { color: colors.textPrimary }]}>{label} target</Text>
+              <Text style={[styles.macroLabel, { color: colors.textPrimary }]}>{t('goals.target', { macro: label })}</Text>
               <Switch
                 value={macros[key].enabled}
                 onValueChange={(enabled) => {
                   setMacros((current) => ({ ...current, [key]: { ...current[key], enabled } }));
                   setErrors({});
                 }}
-                accessibilityLabel={`${label} target enabled`}
+                accessibilityLabel={t('goals.targetEnabledA11y', { macro: label })}
                 trackColor={{ true: colors.accent, false: colors.divider }}
               />
             </View>
             {macros[key].enabled ? (
               <NumberField
-                unit="g"
+                unit={t('common.grams')}
                 value={macros[key].text}
                 onChangeText={(text) => {
                   setMacros((current) => ({ ...current, [key]: { ...current[key], text } }));
                   setErrors({});
                 }}
-                error={errors[key]}
-                accessibilityLabel={`${label} target in grams`}
+                error={fieldError(label, errors[key])}
+                accessibilityLabel={t('goals.targetGramsA11y', { macro: label })}
               />
             ) : (
-              <Text style={[styles.disabledHint, { color: colors.textSecondary }]}>Shown as “/—” in the daily summary.</Text>
+              <Text style={[styles.disabledHint, { color: colors.textSecondary }]}>{t('goals.disabledHint')}</Text>
             )}
           </View>
         ))}
         {loaded ? (
           <Text style={[styles.history, { color: colors.textSecondary }]}>
-            Current targets apply since {loaded.effectiveFrom === '1970-01-01' ? 'the beginning' : loaded.effectiveFrom}. Saving starts a new target from today; earlier days keep theirs.
+            {t('goals.history', { date: loaded.effectiveFrom === '1970-01-01' ? t('goals.theBeginning') : loaded.effectiveFrom })}
           </Text>
         ) : null}
       </ScrollView>
       <View style={[styles.footer, { backgroundColor: colors.surface, borderTopColor: colors.divider, paddingBottom: insets.bottom + spacing.md }]}>
-        <Button title="Save goals" onPress={save} loading={saving} disabled={!loaded} />
+        <Button title={t('goals.save')} onPress={save} loading={saving} disabled={!loaded} />
       </View>
     </KeyboardAvoidingView>
   );

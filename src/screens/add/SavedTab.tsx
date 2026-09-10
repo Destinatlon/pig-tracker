@@ -7,6 +7,7 @@ import { listCategories } from '../../db/repositories/categoriesRepo';
 import { listLibrary, listRecentlyUsed } from '../../db/repositories/productsRepo';
 import { Category, DateKey, LibraryItem, libraryItemDisplayName } from '../../domain/models';
 import { formatCalories, formatMacro } from '../../domain/nutrition/format';
+import { useI18n } from '../../i18n';
 import { spacing, typography } from '../../theme/tokens';
 import { useTheme } from '../../theme/ThemeProvider';
 import { SavedAddSheet } from './SavedAddSheet';
@@ -21,6 +22,7 @@ type Row = { type: 'header'; key: string; title: string } | { type: 'item'; key:
 /** Search, category chips, recently used, then matching products. */
 export function SavedTab({ date, onDone }: Props) {
   const { colors } = useTheme();
+  const { t } = useI18n();
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState<number | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -59,23 +61,23 @@ export function SavedTab({ date, onDone }: Props) {
     const rest = library.filter((item) => !recentIds.has(item.variantId));
     const result: Row[] = [];
     if (recentMatches.length > 0) {
-      result.push({ type: 'header', key: 'h-recent', title: 'Recently used' });
+      result.push({ type: 'header', key: 'h-recent', title: t('add.recentlyUsed') });
       for (const item of recentMatches) result.push({ type: 'item', key: `r-${item.variantId}`, item });
     }
     if (rest.length > 0) {
-      result.push({ type: 'header', key: 'h-all', title: search.trim() ? 'Matching products' : 'All products' });
+      result.push({ type: 'header', key: 'h-all', title: search.trim() ? t('add.matchingProducts') : t('add.allProducts') });
       for (const item of rest) result.push({ type: 'item', key: `a-${item.variantId}`, item });
     }
     return result;
-  }, [library, recent, search]);
+  }, [library, recent, search, t]);
 
   return (
     <View style={styles.container}>
       <View style={styles.searchBox}>
-        <TextField value={search} onChangeText={onSearch} placeholder="Search saved products" autoCorrect={false} returnKeyType="search" accessibilityLabel="Search saved products" containerStyle={styles.searchField} />
+        <TextField value={search} onChangeText={onSearch} placeholder={t('add.searchSaved')} autoCorrect={false} returnKeyType="search" accessibilityLabel={t('add.searchSaved')} containerStyle={styles.searchField} />
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipBar} contentContainerStyle={styles.chips} keyboardShouldPersistTaps="handled">
-        <Chip label="All" selected={categoryId === null} onPress={() => onCategory(null)} />
+        <Chip label={t('add.all')} selected={categoryId === null} onPress={() => onCategory(null)} />
         {categories.map((category) => (
           <Chip key={category.id} label={category.name} selected={categoryId === category.id} onPress={() => onCategory(category.id)} />
         ))}
@@ -92,7 +94,7 @@ export function SavedTab({ date, onDone }: Props) {
             <SavedRow item={row.item} onPress={setPicked} />
           )
         }
-        ListEmptyComponent={<EmptyState message={library.length === 0 && !search && categoryId === null ? 'No saved products yet. Add foods manually and save them, or create products from the Products screen.' : 'No matching products'} />}
+        ListEmptyComponent={<EmptyState message={library.length === 0 && !search && categoryId === null ? t('add.noSavedProducts') : t('add.noMatching')} />}
       />
       {picked ? <SavedAddSheet key={picked.variantId} item={picked} date={date} onClose={() => setPicked(null)} onAdded={onDone} /> : null}
     </View>
@@ -101,19 +103,20 @@ export function SavedTab({ date, onDone }: Props) {
 
 function SavedRow({ item, onPress }: { item: LibraryItem; onPress: (item: LibraryItem) => void }) {
   const { colors } = useTheme();
-  const detail = `${formatCalories(item.caloriesPer100g)} kcal · P ${formatMacro(item.proteinPer100g)} · C ${formatMacro(item.carbsPer100g)} · F ${formatMacro(item.fatPer100g)}`;
+  const { t } = useI18n();
+  const detail = `${formatCalories(item.caloriesPer100g)} ${t('common.kcal')} · ${t('macro.p')} ${formatMacro(item.proteinPer100g)} · ${t('macro.c')} ${formatMacro(item.carbsPer100g)} · ${t('macro.f')} ${formatMacro(item.fatPer100g)}`;
   return (
     <Pressable
       onPress={() => onPress(item)}
       accessibilityRole="button"
-      accessibilityLabel={`${libraryItemDisplayName(item)}, per 100 grams ${detail}`}
+      accessibilityLabel={t('add.libraryRowA11y', { name: libraryItemDisplayName(item), detail })}
       style={({ pressed }) => [styles.row, { backgroundColor: pressed ? colors.surfaceVariant : colors.surface, borderBottomColor: colors.divider }]}
     >
       <Text style={[styles.rowName, { color: colors.textPrimary }]} numberOfLines={1}>
         {libraryItemDisplayName(item)}
       </Text>
       <Text style={[styles.rowDetail, { color: colors.textSecondary }]} numberOfLines={1}>
-        {detail} <Text style={{ color: colors.disabled }}>/ 100 g</Text>
+        {detail} <Text style={{ color: colors.disabled }}>{t('common.per100gSuffix')}</Text>
       </Text>
     </Pressable>
   );

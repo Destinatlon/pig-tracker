@@ -5,14 +5,15 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SnackbarProvider } from './src/components/Snackbar';
 import { getDb } from './src/db/database';
-import { getThemePreference } from './src/db/repositories/settingsRepo';
+import { getLanguagePreference, getThemePreference, LanguagePreference } from './src/db/repositories/settingsRepo';
 import { ThemePreference } from './src/domain/models';
+import { I18nProvider } from './src/i18n';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { installNotificationHandler } from './src/notifications/reminders';
 import { LibrarySaveProvider } from './src/screens/add/LibrarySaveProvider';
 import { ThemeProvider, useTheme } from './src/theme/ThemeProvider';
 
-type Boot = { status: 'loading' } | { status: 'ready'; theme: ThemePreference } | { status: 'error'; message: string };
+type Boot = { status: 'loading' } | { status: 'ready'; theme: ThemePreference; language: LanguagePreference } | { status: 'error'; message: string };
 
 export default function App() {
   const [boot, setBoot] = useState<Boot>({ status: 'loading' });
@@ -20,8 +21,8 @@ export default function App() {
   useEffect(() => {
     installNotificationHandler();
     getDb()
-      .then(() => getThemePreference())
-      .then((theme) => setBoot({ status: 'ready', theme }))
+      .then(() => Promise.all([getThemePreference(), getLanguagePreference()]))
+      .then(([theme, language]) => setBoot({ status: 'ready', theme, language }))
       .catch((error) => setBoot({ status: 'error', message: String(error) }));
   }, []);
 
@@ -29,7 +30,7 @@ export default function App() {
   if (boot.status === 'error') {
     return (
       <View style={styles.error}>
-        <Text style={styles.errorTitle}>Could not open the local database</Text>
+        <Text style={styles.errorTitle}>Could not open the local database / Не вдалося відкрити локальну базу даних</Text>
         <Text style={styles.errorText}>{boot.message}</Text>
       </View>
     );
@@ -38,9 +39,11 @@ export default function App() {
   return (
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
-        <ThemeProvider initialPreference={boot.theme}>
-          <ThemedApp />
-        </ThemeProvider>
+        <I18nProvider initialPreference={boot.language}>
+          <ThemeProvider initialPreference={boot.theme}>
+            <ThemedApp />
+          </ThemeProvider>
+        </I18nProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

@@ -12,7 +12,8 @@ import { IconButton } from '../../components/IconButton';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { useSnackbar } from '../../components/Snackbar';
 import { copyDay, copyEntryToDate, deleteEntry, reorderEntries, restoreEntry } from '../../db/repositories/dayEntriesRepo';
-import { addDays, describeDate, formatLongDate, parseDateKey, toDateKey, todayKey } from '../../domain/dates';
+import { addDays, parseDateKey, toDateKey, todayKey } from '../../domain/dates';
+import { useI18n } from '../../i18n';
 import { DateKey, DayEntry } from '../../domain/models';
 import { calculateDayTotals } from '../../domain/nutrition/calculations';
 import { DrawerRouteProps } from '../../navigation/types';
@@ -25,7 +26,7 @@ import { EntryEditSheet } from './EntryEditSheet';
 import { IncompleteMacrosSheet } from './IncompleteMacrosSheet';
 import { useDay } from './useDay';
 
-const BULK_EDIT_HOLD_MS = 2000;
+const BULK_EDIT_HOLD_MS = 1000;
 
 function openDatePicker(initial: DateKey, onPicked: (date: DateKey) => void) {
   DateTimePickerAndroid.open({
@@ -39,6 +40,7 @@ function openDatePicker(initial: DateKey, onPicked: (date: DateKey) => void) {
 
 export function DayScreen({ navigation }: DrawerRouteProps<'Day'>) {
   const { colors } = useTheme();
+  const { t, tn, longDate, relativeDate } = useI18n();
   const snackbar = useSnackbar();
   const [date, setDate] = useState<DateKey>(() => todayKey());
   const { entries, goal, loading, reload, setEntries } = useDay(date);
@@ -65,21 +67,21 @@ export function DayScreen({ navigation }: DrawerRouteProps<'Day'>) {
       try {
         await deleteEntry(entry.id);
       } catch (error) {
-        snackbar.show({ message: `Could not delete: ${String(error)}` });
+        snackbar.show({ message: `${t('error.couldNotDelete')}: ${String(error)}` });
         return;
       }
       setEntries(entries.filter((e) => e.id !== entry.id));
       snackbar.show({
-        message: 'Entry deleted',
-        actionLabel: 'Undo',
+        message: t('day.entryDeleted'),
+        actionLabel: t('common.undo'),
         onAction: () => {
           restoreEntry(entry)
             .then(reload)
-            .catch((error) => snackbar.show({ message: `Could not restore: ${String(error)}` }));
+            .catch((error) => snackbar.show({ message: `${t('error.couldNotRestore')}: ${String(error)}` }));
         },
       });
     },
-    [entries, reload, setEntries, snackbar],
+    [entries, reload, setEntries, snackbar, t],
   );
 
   const onReorder = useCallback(
@@ -90,11 +92,11 @@ export function DayScreen({ navigation }: DrawerRouteProps<'Day'>) {
         date,
         next.map((e) => e.id),
       ).catch((error) => {
-        snackbar.show({ message: `Could not save order: ${String(error)}` });
+        snackbar.show({ message: `${t('error.couldNotSaveOrder')}: ${String(error)}` });
         reload();
       });
     },
-    [date, entries, reload, setEntries, snackbar],
+    [date, entries, reload, setEntries, snackbar, t],
   );
 
   const copyEntry = useCallback(
@@ -103,13 +105,13 @@ export function DayScreen({ navigation }: DrawerRouteProps<'Day'>) {
       openDatePicker(addDays(date, 1), (target) => {
         copyEntryToDate(entry, target)
           .then(() => {
-            snackbar.show({ message: `Copied to ${describeDate(target)}` });
+            snackbar.show({ message: t('day.copiedTo', { date: relativeDate(target) }) });
             if (target === date) reload();
           })
-          .catch((error) => snackbar.show({ message: `Could not copy: ${String(error)}` }));
+          .catch((error) => snackbar.show({ message: `${t('error.couldNotCopy')}: ${String(error)}` }));
       });
     },
-    [date, reload, snackbar],
+    [date, reload, snackbar, t, relativeDate],
   );
 
   const copyAnotherDay = useCallback(() => {
@@ -117,13 +119,13 @@ export function DayScreen({ navigation }: DrawerRouteProps<'Day'>) {
       if (source === date) return;
       copyDay(source, date, 'add')
         .then((count) => {
-          if (count === 0) snackbar.show({ message: `Nothing logged on ${describeDate(source)}` });
-          else snackbar.show({ message: `Copied ${count} ${count === 1 ? 'entry' : 'entries'} from ${describeDate(source)}` });
+          if (count === 0) snackbar.show({ message: t('day.nothingLoggedOn', { date: relativeDate(source) }) });
+          else snackbar.show({ message: tn('day.copiedEntries', count, { date: relativeDate(source) }) });
           return reload();
         })
-        .catch((error) => snackbar.show({ message: `Could not copy: ${String(error)}` }));
+        .catch((error) => snackbar.show({ message: `${t('error.couldNotCopy')}: ${String(error)}` }));
     });
-  }, [date, reload, snackbar]);
+  }, [date, reload, snackbar, t, tn, relativeDate]);
 
   const openAdd = useCallback(() => navigation.navigate('AddProduct', { date }), [navigation, date]);
 
@@ -149,26 +151,26 @@ export function DayScreen({ navigation }: DrawerRouteProps<'Day'>) {
 
   const header = (
     <ScreenHeader
-      left={<IconButton icon="menu" accessibilityLabel="Open navigation menu" onPress={() => navigation.dispatch(DrawerActions.openDrawer())} />}
+      left={<IconButton icon="menu" accessibilityLabel={t('common.openMenu')} onPress={() => navigation.dispatch(DrawerActions.openDrawer())} />}
       center={
         <View style={styles.dateRow}>
-          <IconButton icon="chevron-left" accessibilityLabel="Previous day" onPress={() => goToDay(addDays(date, -1))} />
+          <IconButton icon="chevron-left" accessibilityLabel={t('day.previousDay')} onPress={() => goToDay(addDays(date, -1))} />
           <Pressable
             onPress={() => openDatePicker(date, goToDay)}
             accessibilityRole="button"
-            accessibilityLabel={`${formatLongDate(date)}. Change date`}
+            accessibilityLabel={`${longDate(date)}. ${t('day.changeDate')}`}
             style={styles.dateButton}
             hitSlop={4}
           >
             <Text style={[styles.dateText, { color: colors.textPrimary }]} numberOfLines={1} adjustsFontSizeToFit>
-              {formatLongDate(date)}
+              {longDate(date)}
             </Text>
-            {date !== todayKey() ? <Text style={[styles.dateHint, { color: colors.textSecondary }]}>{describeDate(date)}</Text> : null}
+            {date !== todayKey() ? <Text style={[styles.dateHint, { color: colors.textSecondary }]}>{relativeDate(date)}</Text> : null}
           </Pressable>
-          <IconButton icon="chevron-right" accessibilityLabel="Next day" onPress={() => goToDay(addDays(date, 1))} />
+          <IconButton icon="chevron-right" accessibilityLabel={t('day.nextDay')} onPress={() => goToDay(addDays(date, 1))} />
         </View>
       }
-      right={bulkMode ? <Text style={[styles.modeTag, { color: colors.warning }]}>Bulk edit</Text> : <View style={styles.rightSpacer} />}
+      right={bulkMode ? <Text style={[styles.modeTag, { color: colors.warning }]}>{t('day.bulkEditTag')}</Text> : <View style={styles.rightSpacer} />}
     />
   );
 
@@ -182,7 +184,7 @@ export function DayScreen({ navigation }: DrawerRouteProps<'Day'>) {
           onCancel={() => setBulkMode(false)}
           onSaved={() => {
             setBulkMode(false);
-            snackbar.show({ message: 'Changes saved' });
+            snackbar.show({ message: t('day.changesSaved') });
             reload();
           }}
         />
@@ -206,9 +208,9 @@ export function DayScreen({ navigation }: DrawerRouteProps<'Day'>) {
             keyboardShouldPersistTaps="handled"
             ListEmptyComponent={
               loading ? null : (
-                <EmptyState message="Nothing logged for this day">
-                  <Button title="Add product" onPress={openAdd} />
-                  <Button title="Copy another day" variant="secondary" onPress={copyAnotherDay} />
+                <EmptyState message={t('day.emptyTitle')}>
+                  <Button title={t('day.addProduct')} onPress={openAdd} />
+                  <Button title={t('day.copyAnotherDay')} variant="secondary" onPress={copyAnotherDay} />
                 </EmptyState>
               )
             }
@@ -219,8 +221,8 @@ export function DayScreen({ navigation }: DrawerRouteProps<'Day'>) {
         onPress={openAdd}
         onLongPress={enterBulkMode}
         delayLongPress={BULK_EDIT_HOLD_MS}
-        accessibilityLabel="Add product"
-        accessibilityHint="Hold for two seconds to edit the whole day"
+        accessibilityLabel={t('day.addProduct')}
+        accessibilityHint={t('day.fabHint')}
       />
       {editing ? (
         <EntryEditSheet

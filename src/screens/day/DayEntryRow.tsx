@@ -7,6 +7,7 @@ import { DayEntry, entryDisplayName } from '../../domain/models';
 import { calculateConsumedMacros } from '../../domain/nutrition/calculations';
 import { formatCalories, formatMacro, formatWeight } from '../../domain/nutrition/format';
 import { spacing, typography } from '../../theme/tokens';
+import { useI18n } from '../../i18n';
 import { useTheme } from '../../theme/ThemeProvider';
 
 interface Props {
@@ -19,16 +20,17 @@ const DELETE_WIDTH = 96;
 
 export const DayEntryRow = memo(function DayEntryRow({ entry, onPress, onDelete }: Props) {
   const { colors } = useTheme();
+  const { t } = useI18n();
   const drag = useReorderableDrag();
   const consumed = calculateConsumedMacros(entry, entry.weightGrams);
   const incomplete = consumed.consumedProtein === null || consumed.consumedCarbs === null || consumed.consumedFat === null;
-  const detail = `${formatWeight(entry.weightGrams)} g · ${formatCalories(consumed.consumedCalories)} kcal · P ${formatMacro(consumed.consumedProtein)} · C ${formatMacro(consumed.consumedCarbs)} · F ${formatMacro(consumed.consumedFat)}`;
+  const detail = `${formatWeight(entry.weightGrams)} ${t('common.grams')} · ${formatCalories(consumed.consumedCalories)} ${t('common.kcal')} · ${t('macro.p')} ${formatMacro(consumed.consumedProtein)} · ${t('macro.c')} ${formatMacro(consumed.consumedCarbs)} · ${t('macro.f')} ${formatMacro(consumed.consumedFat)}`;
 
   return (
     <ReanimatedSwipeable
       renderRightActions={() => (
         <View style={[styles.deleteAction, { backgroundColor: colors.danger }]} accessibilityElementsHidden>
-          <MaterialCommunityIcons name="trash-can-outline" size={24} color={colors.onDanger} accessibilityLabel="Delete entry" />
+          <MaterialCommunityIcons name="trash-can-outline" size={24} color={colors.onDanger} accessibilityLabel={t('day.deleteEntry')} />
         </View>
       )}
       rightThreshold={DELETE_WIDTH}
@@ -41,8 +43,8 @@ export const DayEntryRow = memo(function DayEntryRow({ entry, onPress, onDelete 
       <Pressable
         onPress={() => onPress(entry)}
         accessibilityRole="button"
-        accessibilityLabel={`${entryDisplayName(entry)}, ${detail}${incomplete ? ', incomplete nutrition information' : ''}`}
-        accessibilityHint="Opens the entry editor. Swipe left to delete."
+        accessibilityLabel={`${entryDisplayName(entry)}, ${detail}${incomplete ? t('day.rowIncompleteA11y') : ''}`}
+        accessibilityHint={t('day.rowHint')}
         style={({ pressed }) => [styles.row, { backgroundColor: pressed ? colors.surfaceVariant : colors.surface, borderBottomColor: colors.divider }]}
       >
         <View style={styles.text}>
@@ -59,15 +61,15 @@ export const DayEntryRow = memo(function DayEntryRow({ entry, onPress, onDelete 
             size={20}
             color={colors.warning}
             style={styles.warning}
-            accessibilityLabel="Incomplete nutrition information"
+            accessibilityLabel={t('day.incompleteA11y')}
           />
         ) : null}
         <Pressable
           onPressIn={drag}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel="Reorder entry"
-          accessibilityHint="Drag to move this entry"
+          accessibilityLabel={t('day.reorderEntry')}
+          accessibilityHint={t('day.reorderHint')}
           style={styles.handle}
         >
           <MaterialCommunityIcons name="drag-horizontal-variant" size={22} color={colors.disabled} />

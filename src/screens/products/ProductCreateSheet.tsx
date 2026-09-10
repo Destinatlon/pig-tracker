@@ -9,6 +9,7 @@ import { createProduct } from '../../db/repositories/productsRepo';
 import { Category } from '../../domain/models';
 import { DraftErrors, parsePer100gTexts, Per100gTexts, per100gTextsFrom } from '../../domain/nutrition/draft';
 import { parseRequiredName } from '../../domain/numeric';
+import { useI18n } from '../../i18n';
 
 interface Props {
   categories: Category[];
@@ -19,6 +20,7 @@ interface Props {
 
 /** Creates a product and its hidden default variant from one form. */
 export function ProductCreateSheet({ categories, defaultCategoryId, onClose, onCreated }: Props) {
+  const { t, fieldError } = useI18n();
   const [name, setName] = useState('');
   const [categoryId, setCategoryId] = useState(defaultCategoryId);
   const [texts, setTexts] = useState<Per100gTexts>(() => per100gTextsFrom(null));
@@ -31,15 +33,15 @@ export function ProductCreateSheet({ categories, defaultCategoryId, onClose, onC
       onClose();
       return;
     }
-    Alert.alert('Discard this product?', undefined, [
-      { text: 'Keep editing', style: 'cancel' },
-      { text: 'Discard', style: 'destructive', onPress: onClose },
+    Alert.alert(t('products.discardProduct'), undefined, [
+      { text: t('common.keepEditing'), style: 'cancel' },
+      { text: t('common.discard'), style: 'destructive', onPress: onClose },
     ]);
   };
 
   const save = async () => {
     if (saving) return;
-    const parsedName = parseRequiredName(name, 'Product name');
+    const parsedName = parseRequiredName(name);
     const parsed = parsePer100gTexts(texts);
     if (!parsedName.ok || !parsed.ok) {
       setErrors({ ...(parsed.ok ? {} : parsed.errors), ...(parsedName.ok ? {} : { name: parsedName.error }) });
@@ -52,7 +54,7 @@ export function ProductCreateSheet({ categories, defaultCategoryId, onClose, onC
       onClose();
     } catch (error) {
       setSaving(false);
-      Alert.alert('Could not create product', String(error));
+      Alert.alert(t('products.couldNotCreate'), String(error));
     }
   };
 
@@ -60,23 +62,23 @@ export function ProductCreateSheet({ categories, defaultCategoryId, onClose, onC
     <BottomSheet
       visible
       onRequestClose={requestClose}
-      title="New product"
+      title={t('products.newProduct')}
       footer={
         <>
-          <Button title="Discard" variant="secondary" onPress={requestClose} style={styles.footerButton} />
-          <Button title="Save" onPress={save} loading={saving} style={styles.footerButton} />
+          <Button title={t('common.discard')} variant="secondary" onPress={requestClose} style={styles.footerButton} />
+          <Button title={t('common.save')} onPress={save} loading={saving} style={styles.footerButton} />
         </>
       }
     >
       <TextField
-        label="Product name"
+        label={t('field.productName')}
         required
         value={name}
         onChangeText={(text) => {
           setName(text);
           setErrors({});
         }}
-        error={errors.name}
+        error={fieldError(t('field.productName'), errors.name)}
         autoFocus
         autoCapitalize="sentences"
       />

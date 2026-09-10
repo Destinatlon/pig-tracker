@@ -7,9 +7,9 @@ import { NutritionDraftFields } from '../../components/NutritionDraftFields';
 import { useSnackbar } from '../../components/Snackbar';
 import { insertEntry } from '../../db/repositories/dayEntriesRepo';
 import { findLibraryItemsByName } from '../../db/repositories/productsRepo';
-import { describeDate } from '../../domain/dates';
 import { DateKey, LibraryItem, libraryItemDisplayName } from '../../domain/models';
 import { createEmptyDraft, DraftErrors, NutritionDraft, validateDraft } from '../../domain/nutrition/draft';
+import { useI18n } from '../../i18n';
 import { spacing, typography } from '../../theme/tokens';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useLibrarySave } from './LibrarySaveProvider';
@@ -24,6 +24,7 @@ interface Props {
 /** Primary logging flow: name, weight, kcal, P, C, F entered for the consumed amount. */
 export function ManualTab({ date, onDone }: Props) {
   const { colors } = useTheme();
+  const { t, relativeDate } = useI18n();
   const insets = useSafeAreaInsets();
   const snackbar = useSnackbar();
   const librarySave = useLibrarySave();
@@ -67,13 +68,13 @@ export function ManualTab({ date, onDone }: Props) {
       });
       onDone();
       snackbar.show({
-        message: `Added to ${describeDate(date)}`,
-        actionLabel: 'Save as product',
+        message: t('add.addedTo', { date: relativeDate(date) }),
+        actionLabel: t('add.saveAsProduct'),
         onAction: () => librarySave.openSaveAsProduct(entry),
       });
     } catch (error) {
       setSaving(false);
-      Alert.alert('Could not add entry', String(error));
+      Alert.alert(t('error.couldNotAdd'), String(error));
     }
   };
 
@@ -83,13 +84,13 @@ export function ManualTab({ date, onDone }: Props) {
         <NutritionDraftFields draft={draft} onChange={change} errors={errors} autoFocusName />
         {suggestions.length > 0 ? (
           <View style={styles.suggestions}>
-            <Text style={[styles.suggestionTitle, { color: colors.textSecondary }]}>Saved products with a similar name</Text>
+            <Text style={[styles.suggestionTitle, { color: colors.textSecondary }]}>{t('add.suggestionsTitle')}</Text>
             {suggestions.map((item) => (
               <Pressable
                 key={item.variantId}
                 onPress={() => setSavedPick(item)}
                 accessibilityRole="button"
-                accessibilityLabel={`Use saved product ${libraryItemDisplayName(item)}`}
+                accessibilityLabel={t('add.useSavedA11y', { name: libraryItemDisplayName(item) })}
                 style={({ pressed }) => [styles.suggestion, { opacity: pressed ? 0.6 : 1 }]}
               >
                 <MaterialCommunityIcons name="bookmark-outline" size={18} color={colors.accent} />
@@ -100,10 +101,10 @@ export function ManualTab({ date, onDone }: Props) {
             ))}
           </View>
         ) : null}
-        <Text style={[styles.hint, { color: colors.textSecondary }]}>Weight and calories are required. Leave a macro empty if you do not know it.</Text>
+        <Text style={[styles.hint, { color: colors.textSecondary }]}>{t('add.hint')}</Text>
       </ScrollView>
       <View style={[styles.footer, { backgroundColor: colors.surface, borderTopColor: colors.divider, paddingBottom: insets.bottom + spacing.md }]}>
-        <Button title="Add" onPress={add} loading={saving} />
+        <Button title={t('common.add')} onPress={add} loading={saving} />
       </View>
       {savedPick ? <SavedAddSheet key={savedPick.variantId} item={savedPick} date={date} onClose={() => setSavedPick(null)} onAdded={onDone} /> : null}
     </KeyboardAvoidingView>

@@ -1,7 +1,24 @@
 import { DateKey } from './models';
 
-const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+/** Localised names used when rendering dates. Supplied by the i18n layer. */
+export interface DateNames {
+  weekdays: readonly string[];
+  /** Month names in the form used inside a date (genitive in Ukrainian). */
+  months: readonly string[];
+  monthsShort: readonly string[];
+  today: string;
+  yesterday: string;
+  tomorrow: string;
+}
+
+export const EN_DATE_NAMES: DateNames = {
+  weekdays: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+  months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+  monthsShort: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+  today: 'today',
+  yesterday: 'yesterday',
+  tomorrow: 'tomorrow',
+};
 
 function pad2(n: number): string {
   return n < 10 ? `0${n}` : String(n);
@@ -33,24 +50,24 @@ export function addDays(key: DateKey, days: number): DateKey {
 }
 
 /** e.g. `Thursday, 10 September` */
-export function formatLongDate(key: DateKey): string {
+export function formatLongDate(key: DateKey, names: DateNames = EN_DATE_NAMES): string {
   const date = parseDateKey(key);
-  return `${WEEKDAYS[date.getDay()]}, ${date.getDate()} ${MONTHS[date.getMonth()]}`;
+  return `${names.weekdays[date.getDay()]}, ${date.getDate()} ${names.months[date.getMonth()]}`;
 }
 
 /** e.g. `10 Sep` or `10 Sep 2025` when the year differs from the current one. */
-export function formatShortDate(key: DateKey, now: Date = new Date()): string {
+export function formatShortDate(key: DateKey, names: DateNames = EN_DATE_NAMES, now: Date = new Date()): string {
   const date = parseDateKey(key);
-  const base = `${date.getDate()} ${MONTHS[date.getMonth()].slice(0, 3)}`;
+  const base = `${date.getDate()} ${names.monthsShort[date.getMonth()]}`;
   return date.getFullYear() === now.getFullYear() ? base : `${base} ${date.getFullYear()}`;
 }
 
-export function describeDate(key: DateKey, now: Date = new Date()): string {
+export function describeDate(key: DateKey, names: DateNames = EN_DATE_NAMES, now: Date = new Date()): string {
   const today = todayKey(now);
-  if (key === today) return 'today';
-  if (key === addDays(today, -1)) return 'yesterday';
-  if (key === addDays(today, 1)) return 'tomorrow';
-  return formatShortDate(key, now);
+  if (key === today) return names.today;
+  if (key === addDays(today, -1)) return names.yesterday;
+  if (key === addDays(today, 1)) return names.tomorrow;
+  return formatShortDate(key, names, now);
 }
 
 /** e.g. `21:05` from an ISO timestamp, in local time. */

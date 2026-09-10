@@ -11,6 +11,7 @@ import { getUncategorizedCategoryId, listCategories } from '../../db/repositorie
 import { listLibrary } from '../../db/repositories/productsRepo';
 import { Category, LibraryItem } from '../../domain/models';
 import { DrawerRouteProps } from '../../navigation/types';
+import { useI18n } from '../../i18n';
 import { spacing } from '../../theme/tokens';
 import { useTheme } from '../../theme/ThemeProvider';
 import { CategoryManagementSheet } from './CategoryManagementSheet';
@@ -29,6 +30,7 @@ type Sheet =
 /** Search-first flat library of every product and variant. */
 export function ProductsScreen({ navigation }: DrawerRouteProps<'Products'>) {
   const { colors } = useTheme();
+  const { t } = useI18n();
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState<number | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -73,15 +75,15 @@ export function ProductsScreen({ navigation }: DrawerRouteProps<'Products'>) {
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <ScreenHeader
-        left={<IconButton icon="menu" accessibilityLabel="Open navigation menu" onPress={() => navigation.dispatch(DrawerActions.openDrawer())} />}
-        title="Products"
-        right={<IconButton icon="shape-outline" accessibilityLabel="Manage categories" onPress={() => setSheet({ kind: 'categories' })} />}
+        left={<IconButton icon="menu" accessibilityLabel={t('common.openMenu')} onPress={() => navigation.dispatch(DrawerActions.openDrawer())} />}
+        title={t('nav.products')}
+        right={<IconButton icon="shape-outline" accessibilityLabel={t('products.manageCategories')} onPress={() => setSheet({ kind: 'categories' })} />}
       />
       <View style={styles.searchBox}>
-        <TextField value={search} onChangeText={onSearch} placeholder="Search products" autoCorrect={false} returnKeyType="search" accessibilityLabel="Search products" containerStyle={styles.searchField} />
+        <TextField value={search} onChangeText={onSearch} placeholder={t('products.search')} autoCorrect={false} returnKeyType="search" accessibilityLabel={t('products.search')} containerStyle={styles.searchField} />
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipBar} contentContainerStyle={styles.chips} keyboardShouldPersistTaps="handled">
-        <Chip label="All" selected={categoryId === null} onPress={() => onCategory(null)} onLongPress={() => setSheet({ kind: 'categories' })} accessibilityHint="Long press to manage categories" />
+        <Chip label={t('add.all')} selected={categoryId === null} onPress={() => onCategory(null)} onLongPress={() => setSheet({ kind: 'categories' })} accessibilityHint={t('products.chipHint')} />
         {categories.map((category) => (
           <Chip
             key={category.id}
@@ -89,7 +91,7 @@ export function ProductsScreen({ navigation }: DrawerRouteProps<'Products'>) {
             selected={categoryId === category.id}
             onPress={() => onCategory(category.id)}
             onLongPress={() => setSheet({ kind: 'categories' })}
-            accessibilityHint="Long press to manage categories"
+            accessibilityHint={t('products.chipHint')}
           />
         ))}
       </ScrollView>
@@ -99,9 +101,9 @@ export function ProductsScreen({ navigation }: DrawerRouteProps<'Products'>) {
         renderItem={({ item }) => <ProductLibraryRow item={item} onPress={(picked) => setSheet({ kind: 'edit', item: picked })} />}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.list}
-        ListEmptyComponent={<EmptyState message={search || categoryId !== null ? 'No matching products' : 'No saved products yet. Tap + to create one.'} />}
+        ListEmptyComponent={<EmptyState message={search || categoryId !== null ? t('products.noMatching') : t('products.empty')} />}
       />
-      <Fab onPress={() => setSheet({ kind: 'create' })} accessibilityLabel="Create product" />
+      <Fab onPress={() => setSheet({ kind: 'create' })} accessibilityLabel={t('products.create')} />
       {sheet.kind === 'create' && uncategorizedId !== null ? (
         <ProductCreateSheet categories={categories} defaultCategoryId={categoryId ?? uncategorizedId} onClose={() => setSheet({ kind: 'none' })} onCreated={load} />
       ) : null}

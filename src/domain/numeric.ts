@@ -1,6 +1,9 @@
 /** Centralized numeric parsing for form fields. Negative values are never accepted. */
 
-export type ParseResult<T> = { ok: true; value: T } | { ok: false; error: string };
+/** Machine-readable validation outcome; the UI turns it into a translated message. */
+export type FieldErrorCode = 'required' | 'nonNegative' | 'positive';
+
+export type ParseResult<T> = { ok: true; value: T } | { ok: false; error: FieldErrorCode };
 
 /** Keeps only digits and a single decimal separator. Commas become dots. */
 export function sanitizeNumericText(text: string): string {
@@ -19,31 +22,31 @@ export function parseNumberText(text: string): { kind: 'empty' } | { kind: 'inva
 }
 
 /** Required, may be zero, never negative. Used for calories. */
-export function parseRequiredNonNegative(text: string, label = 'Value'): ParseResult<number> {
+export function parseRequiredNonNegative(text: string): ParseResult<number> {
   const parsed = parseNumberText(text);
-  if (parsed.kind === 'empty') return { ok: false, error: `${label} is required` };
-  if (parsed.kind === 'invalid' || parsed.value < 0) return { ok: false, error: `${label} must be a non-negative number` };
+  if (parsed.kind === 'empty') return { ok: false, error: 'required' };
+  if (parsed.kind === 'invalid' || parsed.value < 0) return { ok: false, error: 'nonNegative' };
   return { ok: true, value: parsed.value };
 }
 
 /** Optional: empty maps to null (unknown), never to 0. */
-export function parseOptionalNonNegative(text: string, label = 'Value'): ParseResult<number | null> {
+export function parseOptionalNonNegative(text: string): ParseResult<number | null> {
   const parsed = parseNumberText(text);
   if (parsed.kind === 'empty') return { ok: true, value: null };
-  if (parsed.kind === 'invalid' || parsed.value < 0) return { ok: false, error: `${label} must be a non-negative number` };
+  if (parsed.kind === 'invalid' || parsed.value < 0) return { ok: false, error: 'nonNegative' };
   return { ok: true, value: parsed.value };
 }
 
 /** Weight must be strictly greater than zero. */
-export function parsePositiveWeight(text: string, label = 'Weight'): ParseResult<number> {
+export function parsePositiveWeight(text: string): ParseResult<number> {
   const parsed = parseNumberText(text);
-  if (parsed.kind === 'empty') return { ok: false, error: `${label} is required` };
-  if (parsed.kind === 'invalid' || !(parsed.value > 0)) return { ok: false, error: `${label} must be greater than zero` };
+  if (parsed.kind === 'empty') return { ok: false, error: 'required' };
+  if (parsed.kind === 'invalid' || !(parsed.value > 0)) return { ok: false, error: 'positive' };
   return { ok: true, value: parsed.value };
 }
 
-export function parseRequiredName(text: string, label = 'Name'): ParseResult<string> {
+export function parseRequiredName(text: string): ParseResult<string> {
   const trimmed = text.trim();
-  if (trimmed === '') return { ok: false, error: `${label} is required` };
+  if (trimmed === '') return { ok: false, error: 'required' };
   return { ok: true, value: trimmed };
 }

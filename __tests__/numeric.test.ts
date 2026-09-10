@@ -12,7 +12,7 @@ describe('sanitizeNumericText', () => {
 
 describe('parsers', () => {
   it('requires calories but allows zero', () => {
-    expect(parseRequiredNonNegative('')).toEqual({ ok: false, error: 'Value is required' });
+    expect(parseRequiredNonNegative('')).toEqual({ ok: false, error: 'required' });
     expect(parseRequiredNonNegative('0')).toEqual({ ok: true, value: 0 });
   });
   it('maps empty optional to null, never 0', () => {
@@ -21,7 +21,9 @@ describe('parsers', () => {
     expect(parseOptionalNonNegative('2.5')).toEqual({ ok: true, value: 2.5 });
   });
   it('weight must be positive', () => {
-    expect(parsePositiveWeight('0').ok).toBe(false);
+    expect(parsePositiveWeight('0')).toEqual({ ok: false, error: 'positive' });
+    // A minus sign is stripped by the sanitizer, so negatives cannot be typed in the first place.
+    expect(parseRequiredNonNegative('-5')).toEqual({ ok: true, value: 5 });
     expect(parsePositiveWeight('127.5')).toEqual({ ok: true, value: 127.5 });
   });
 });

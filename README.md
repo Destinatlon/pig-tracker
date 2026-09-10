@@ -2,6 +2,8 @@
 
 Fast, fully offline calorie tracker for Android. No account, no backend, all data in a local SQLite database.
 
+Available in English and Ukrainian; the language follows the device by default and can be changed in Settings → App.
+
 ## Run on a device
 
 Prerequisites: Node 20+, JDK 17, Android SDK with platform 36, a device with USB debugging enabled (`adb devices` should list it).

@@ -2,6 +2,7 @@ import React, { memo } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 import { LibraryItem, libraryItemDisplayName } from '../../domain/models';
 import { formatCalories, formatMacro } from '../../domain/nutrition/format';
+import { useI18n } from '../../i18n';
 import { spacing, typography } from '../../theme/tokens';
 import { useTheme } from '../../theme/ThemeProvider';
 
@@ -12,13 +13,14 @@ interface Props {
 
 export const ProductLibraryRow = memo(function ProductLibraryRow({ item, onPress }: Props) {
   const { colors } = useTheme();
-  const detail = `${formatCalories(item.caloriesPer100g)} kcal · P ${formatMacro(item.proteinPer100g)} · C ${formatMacro(item.carbsPer100g)} · F ${formatMacro(item.fatPer100g)}`;
+  const { t } = useI18n();
+  const detail = `${formatCalories(item.caloriesPer100g)} ${t('common.kcal')} · ${t('macro.p')} ${formatMacro(item.proteinPer100g)} · ${t('macro.c')} ${formatMacro(item.carbsPer100g)} · ${t('macro.f')} ${formatMacro(item.fatPer100g)}`;
   return (
     <Pressable
       onPress={() => onPress(item)}
       accessibilityRole="button"
-      accessibilityLabel={`${libraryItemDisplayName(item)}, ${item.categoryName}, per 100 grams ${detail}`}
-      accessibilityHint="Opens the product editor"
+      accessibilityLabel={t('products.rowA11y', { name: libraryItemDisplayName(item), category: item.categoryName, detail })}
+      accessibilityHint={t('products.rowHint')}
       style={({ pressed }) => [styles.row, { backgroundColor: pressed ? colors.surfaceVariant : colors.surface, borderBottomColor: colors.divider }]}
     >
       <Text style={[styles.name, { color: colors.textPrimary }]} numberOfLines={1}>

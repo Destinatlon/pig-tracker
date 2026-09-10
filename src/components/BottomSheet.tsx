@@ -2,6 +2,7 @@ import React from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { radius, spacing, typography } from '../theme/tokens';
+import { useI18n } from '../i18n';
 import { useTheme } from '../theme/ThemeProvider';
 
 interface Props {
@@ -19,6 +20,7 @@ interface Props {
 /** Modal-backed bottom sheet. Content scrolls; the footer stays fixed above the keyboard. */
 export function BottomSheet({ visible, onRequestClose, title, headerRight, children, footer }: Props) {
   const { colors } = useTheme();
+  const { t } = useI18n();
   const insets = useSafeAreaInsets();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onRequestClose} statusBarTranslucent navigationBarTranslucent>
@@ -27,7 +29,7 @@ export function BottomSheet({ visible, onRequestClose, title, headerRight, child
           style={[StyleSheet.absoluteFill, { backgroundColor: colors.backdrop }]}
           onPress={onRequestClose}
           accessibilityRole="button"
-          accessibilityLabel="Close"
+          accessibilityLabel={t('common.close')}
         />
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.avoider} pointerEvents="box-none">
           <View style={[styles.sheet, { backgroundColor: colors.surface, paddingBottom: insets.bottom }]}>

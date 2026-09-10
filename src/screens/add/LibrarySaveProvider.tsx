@@ -12,6 +12,7 @@ import { addVariant, createProduct } from '../../db/repositories/productsRepo';
 import { Category, DayEntry, LibraryItem } from '../../domain/models';
 import { DraftErrors, parsePer100gTexts, Per100gTexts, per100gTextsFrom } from '../../domain/nutrition/draft';
 import { parseRequiredName } from '../../domain/numeric';
+import { useI18n } from '../../i18n';
 import { spacing, typography } from '../../theme/tokens';
 import { useTheme } from '../../theme/ThemeProvider';
 
@@ -55,6 +56,7 @@ export function useLibrarySave(): LibrarySaveApi {
 
 function SaveAsProductSheet({ entry, onClose }: { entry: DayEntry; onClose: () => void }) {
   const { colors } = useTheme();
+  const { t, fieldError } = useI18n();
   const snackbar = useSnackbar();
   const [name, setName] = useState(entry.productName);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -63,7 +65,7 @@ function SaveAsProductSheet({ entry, onClose }: { entry: DayEntry; onClose: () =
   const [errors, setErrors] = useState<DraftErrors>({});
   const [saving, setSaving] = useState(false);
   const dirty = name !== entry.productName || texts.calories !== per100gTextsFrom(entry).calories || texts.protein !== per100gTextsFrom(entry).protein || texts.carbs !== per100gTextsFrom(entry).carbs || texts.fat !== per100gTextsFrom(entry).fat;
-  const requestClose = () => confirmDiscard(dirty, onClose);
+  const requestClose = () => confirmDiscard(dirty, onClose, t);
 
   useEffect(() => {
     Promise.all([listCategories(), getUncategorizedCategoryId()])
@@ -76,7 +78,7 @@ function SaveAsProductSheet({ entry, onClose }: { entry: DayEntry; onClose: () =
 
   const save = async () => {
     if (saving) return;
-    const parsedName = parseRequiredName(name, 'Product name');
+    const parsedName = parseRequiredName(name);
     const parsed = parsePer100gTexts(texts);
     if (!parsedName.ok || !parsed.ok || categoryId === null) {
       setErrors({ ...(parsed.ok ? {} : parsed.errors), ...(parsedName.ok ? {} : { name: parsedName.error }) });
@@ -87,10 +89,10 @@ function SaveAsProductSheet({ entry, onClose }: { entry: DayEntry; onClose: () =
       const created = await createProduct({ name: parsedName.value, categoryId, ...parsed.value });
       await linkEntryToLibrary(entry.id, created.productId, created.variantId);
       onClose();
-      snackbar.show({ message: `Saved ${parsedName.value} to products` });
+      snackbar.show({ message: t('saveProduct.saved', { name: parsedName.value }) });
     } catch (error) {
       setSaving(false);
-      Alert.alert('Could not save product', String(error));
+      Alert.alert(t('saveProduct.couldNotSave'), String(error));
     }
   };
 
@@ -98,16 +100,16 @@ function SaveAsProductSheet({ entry, onClose }: { entry: DayEntry; onClose: () =
     <BottomSheet
       visible
       onRequestClose={requestClose}
-      title="Save as product"
+      title={t('saveProduct.title')}
       footer={
         <>
-          <Button title="Cancel" variant="secondary" onPress={requestClose} style={styles.footerButton} />
-          <Button title="Save" onPress={save} loading={saving} style={styles.footerButton} />
+          <Button title={t('common.cancel')} variant="secondary" onPress={requestClose} style={styles.footerButton} />
+          <Button title={t('common.save')} onPress={save} loading={saving} style={styles.footerButton} />
         </>
       }
     >
-      <Text style={[styles.hint, { color: colors.textSecondary }]}>Values below were calculated per 100 g from what you logged. Adjust them if needed.</Text>
-      <TextField label="Product name" required value={name} onChangeText={setName} error={errors.name} autoCapitalize="sentences" />
+      <Text style={[styles.hint, { color: colors.textSecondary }]}>{t('saveProduct.hint')}</Text>
+      <TextField label={t('field.productName')} required value={name} onChangeText={setName} error={fieldError(t('field.productName'), errors.name)} autoCapitalize="sentences" />
       <CategoryPicker categories={categories} selectedId={categoryId} onSelect={setCategoryId} />
       <Per100gFields texts={texts} onChange={setTexts} errors={errors} />
     </BottomSheet>
@@ -116,17 +118,18 @@ function SaveAsProductSheet({ entry, onClose }: { entry: DayEntry; onClose: () =
 
 function SaveAsVariantSheet({ entry, source, onClose }: { entry: DayEntry; source: LibraryItem; onClose: () => void }) {
   const { colors } = useTheme();
+  const { t, fieldError } = useI18n();
   const snackbar = useSnackbar();
   const [variantName, setVariantName] = useState('');
   const [texts, setTexts] = useState<Per100gTexts>(() => per100gTextsFrom(entry));
   const [errors, setErrors] = useState<DraftErrors>({});
   const [saving, setSaving] = useState(false);
   const dirty = variantName !== '' || texts.calories !== per100gTextsFrom(entry).calories || texts.protein !== per100gTextsFrom(entry).protein || texts.carbs !== per100gTextsFrom(entry).carbs || texts.fat !== per100gTextsFrom(entry).fat;
-  const requestClose = () => confirmDiscard(dirty, onClose);
+  const requestClose = () => confirmDiscard(dirty, onClose, t);
 
   const save = async () => {
     if (saving) return;
-    const parsedName = parseRequiredName(variantName, 'Variant name');
+    const parsedName = parseRequiredName(variantName);
     const parsed = parsePer100gTexts(texts);
     if (!parsedName.ok || !parsed.ok) {
       setErrors({ ...(parsed.ok ? {} : parsed.errors), ...(parsedName.ok ? {} : { name: parsedName.error }) });
@@ -137,10 +140,10 @@ function SaveAsVariantSheet({ entry, source, onClose }: { entry: DayEntry; sourc
       const variantId = await addVariant(source.productId, parsedName.value, parsed.value);
       await linkEntryToLibrary(entry.id, source.productId, variantId);
       onClose();
-      snackbar.show({ message: `Saved variant ${source.productName} — ${parsedName.value}` });
+      snackbar.show({ message: t('saveVariant.saved', { product: source.productName, variant: parsedName.value }) });
     } catch (error) {
       setSaving(false);
-      Alert.alert('Could not save variant', String(error));
+      Alert.alert(t('saveVariant.couldNotSave'), String(error));
     }
   };
 
@@ -148,30 +151,30 @@ function SaveAsVariantSheet({ entry, source, onClose }: { entry: DayEntry; sourc
     <BottomSheet
       visible
       onRequestClose={requestClose}
-      title="Save as new variant"
+      title={t('saveVariant.title')}
       footer={
         <>
-          <Button title="Cancel" variant="secondary" onPress={requestClose} style={styles.footerButton} />
-          <Button title="Save" onPress={save} loading={saving} style={styles.footerButton} />
+          <Button title={t('common.cancel')} variant="secondary" onPress={requestClose} style={styles.footerButton} />
+          <Button title={t('common.save')} onPress={save} loading={saving} style={styles.footerButton} />
         </>
       }
     >
       <Text style={[styles.product, { color: colors.textPrimary }]}>{source.productName}</Text>
-      <Text style={[styles.hint, { color: colors.textSecondary }]}>Per-100 g values were calculated from the amount you logged. You can correct them before saving.</Text>
-      <TextField label="Variant name" required value={variantName} onChangeText={setVariantName} error={errors.name} autoFocus autoCapitalize="sentences" />
+      <Text style={[styles.hint, { color: colors.textSecondary }]}>{t('saveVariant.hint')}</Text>
+      <TextField label={t('field.variantName')} required value={variantName} onChangeText={setVariantName} error={fieldError(t('field.variantName'), errors.name)} autoFocus autoCapitalize="sentences" />
       <Per100gFields texts={texts} onChange={setTexts} errors={errors} />
     </BottomSheet>
   );
 }
 
-function confirmDiscard(dirty: boolean, onClose: () => void) {
+function confirmDiscard(dirty: boolean, onClose: () => void, t: (key: 'common.discardChangesTitle' | 'common.keepEditing' | 'common.discard') => string) {
   if (!dirty) {
     onClose();
     return;
   }
-  Alert.alert('Discard unsaved changes?', undefined, [
-    { text: 'Keep editing', style: 'cancel' },
-    { text: 'Discard', style: 'destructive', onPress: onClose },
+  Alert.alert(t('common.discardChangesTitle'), undefined, [
+    { text: t('common.keepEditing'), style: 'cancel' },
+    { text: t('common.discard'), style: 'destructive', onPress: onClose },
   ]);
 }
 

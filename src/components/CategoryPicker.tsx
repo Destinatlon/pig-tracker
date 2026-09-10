@@ -2,6 +2,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Category } from '../domain/models';
+import { useI18n } from '../i18n';
 import { radius, spacing, typography } from '../theme/tokens';
 import { useTheme } from '../theme/ThemeProvider';
 import { BottomSheet } from './BottomSheet';
@@ -14,24 +15,26 @@ interface Props {
 }
 
 /** A field-like row that opens a simple category chooser. */
-export function CategoryPicker({ categories, selectedId, onSelect, label = 'Category' }: Props) {
+export function CategoryPicker({ categories, selectedId, onSelect, label }: Props) {
   const { colors } = useTheme();
+  const { t } = useI18n();
+  const resolvedLabel = label ?? t('field.category');
   const [open, setOpen] = useState(false);
   const selected = categories.find((c) => c.id === selectedId);
   return (
     <View style={styles.container}>
-      <Text style={[styles.label, { color: colors.textSecondary }]}>{label}</Text>
+      <Text style={[styles.label, { color: colors.textSecondary }]}>{resolvedLabel}</Text>
       <Pressable
         onPress={() => setOpen(true)}
         accessibilityRole="button"
-        accessibilityLabel={`${label}: ${selected?.name ?? 'none'}`}
-        accessibilityHint="Opens the category chooser"
+        accessibilityLabel={`${resolvedLabel}: ${selected?.name ?? '—'}`}
+        accessibilityHint={t('field.chooseCategory')}
         style={[styles.field, { backgroundColor: colors.surfaceVariant, borderColor: colors.divider }]}
       >
-        <Text style={[styles.value, { color: colors.textPrimary }]}>{selected?.name ?? 'Choose category'}</Text>
+        <Text style={[styles.value, { color: colors.textPrimary }]}>{selected?.name ?? t('field.chooseCategory')}</Text>
         <MaterialCommunityIcons name="chevron-down" size={22} color={colors.textSecondary} />
       </Pressable>
-      <BottomSheet visible={open} onRequestClose={() => setOpen(false)} title={label}>
+      <BottomSheet visible={open} onRequestClose={() => setOpen(false)} title={resolvedLabel}>
         {categories.map((category) => {
           const isSelected = category.id === selectedId;
           return (

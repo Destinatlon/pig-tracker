@@ -7,6 +7,7 @@ import { TextField } from '../../components/TextField';
 import { createCategory, deleteCategory, moveCategory, renameCategory } from '../../db/repositories/categoriesRepo';
 import { Category } from '../../domain/models';
 import { parseRequiredName } from '../../domain/numeric';
+import { useI18n } from '../../i18n';
 import { spacing, typography } from '../../theme/tokens';
 import { useTheme } from '../../theme/ThemeProvider';
 
@@ -19,6 +20,7 @@ interface Props {
 /** Add, rename, delete and reorder categories with explicit Up/Down controls. */
 export function CategoryManagementSheet({ categories, onClose, onChanged }: Props) {
   const { colors } = useTheme();
+  const { t, fieldError } = useI18n();
   const [newName, setNewName] = useState('');
   const [newError, setNewError] = useState<string | null>(null);
   const [renaming, setRenaming] = useState<{ id: number; name: string } | null>(null);
@@ -31,16 +33,16 @@ export function CategoryManagementSheet({ categories, onClose, onChanged }: Prop
       await action();
       await onChanged();
     } catch (error) {
-      Alert.alert('Something went wrong', String(error));
+      Alert.alert(t('common.somethingWrong'), String(error));
     } finally {
       setBusy(false);
     }
   };
 
   const add = () => {
-    const parsed = parseRequiredName(newName, 'Category name');
+    const parsed = parseRequiredName(newName);
     if (!parsed.ok) {
-      setNewError(parsed.error);
+      setNewError(fieldError(t('field.categoryName'), parsed.error) ?? null);
       return;
     }
     setNewError(null);
@@ -52,9 +54,9 @@ export function CategoryManagementSheet({ categories, onClose, onChanged }: Prop
 
   const saveRename = () => {
     if (!renaming) return;
-    const parsed = parseRequiredName(renaming.name, 'Category name');
+    const parsed = parseRequiredName(renaming.name);
     if (!parsed.ok) {
-      Alert.alert(parsed.error);
+      Alert.alert(fieldError(t('field.categoryName'), parsed.error) ?? '');
       return;
     }
     const { id } = renaming;
@@ -65,16 +67,16 @@ export function CategoryManagementSheet({ categories, onClose, onChanged }: Prop
   };
 
   const confirmDelete = (category: Category) => {
-    Alert.alert(`Delete "${category.name}"?`, 'Its products will move to Uncategorized.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => run(() => deleteCategory(category.id)) },
+    Alert.alert(t('categories.deleteTitle', { name: category.name }), t('categories.deleteBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.delete'), style: 'destructive', onPress: () => run(() => deleteCategory(category.id)) },
     ]);
   };
 
   const userCategories = categories.filter((c) => !c.isSystem);
 
   return (
-    <BottomSheet visible onRequestClose={onClose} title="Categories" footer={<Button title="Done" onPress={onClose} style={styles.footerButton} />}>
+    <BottomSheet visible onRequestClose={onClose} title={t('categories.title')} footer={<Button title={t('common.done')} onPress={onClose} style={styles.footerButton} />}>
       <View style={styles.addRow}>
         <TextField
           value={newName}
@@ -82,15 +84,15 @@ export function CategoryManagementSheet({ categories, onClose, onChanged }: Prop
             setNewName(text);
             setNewError(null);
           }}
-          placeholder="New category"
+          placeholder={t('categories.new')}
           error={newError}
           containerStyle={styles.addField}
-          accessibilityLabel="New category name"
+          accessibilityLabel={t('categories.newA11y')}
           autoCapitalize="sentences"
           returnKeyType="done"
           onSubmitEditing={add}
         />
-        <Button title="Add" variant="secondary" onPress={add} disabled={busy} style={styles.addButton} />
+        <Button title={t('common.add')} variant="secondary" onPress={add} disabled={busy} style={styles.addButton} />
       </View>
       {userCategories.map((category, index) => (
         <View key={category.id} style={[styles.row, { borderBottomColor: colors.divider }]}>
@@ -100,31 +102,31 @@ export function CategoryManagementSheet({ categories, onClose, onChanged }: Prop
                 value={renaming.name}
                 onChangeText={(name) => setRenaming({ id: category.id, name })}
                 containerStyle={styles.renameField}
-                accessibilityLabel="Category name"
+                accessibilityLabel={t('field.categoryName')}
                 autoFocus
                 autoCapitalize="sentences"
                 returnKeyType="done"
                 onSubmitEditing={saveRename}
                 compact
               />
-              <IconButton icon="check" accessibilityLabel="Save name" onPress={saveRename} color={colors.accent} />
-              <IconButton icon="close" accessibilityLabel="Cancel rename" onPress={() => setRenaming(null)} />
+              <IconButton icon="check" accessibilityLabel={t('categories.saveName')} onPress={saveRename} color={colors.accent} />
+              <IconButton icon="close" accessibilityLabel={t('categories.cancelRename')} onPress={() => setRenaming(null)} />
             </>
           ) : (
             <>
               <Text style={[styles.name, { color: colors.textPrimary }]} numberOfLines={1}>
                 {category.name}
               </Text>
-              <IconButton icon="pencil-outline" accessibilityLabel={`Rename ${category.name}`} onPress={() => setRenaming({ id: category.id, name: category.name })} size={20} />
-              <IconButton icon="arrow-up" accessibilityLabel={`Move ${category.name} up`} disabled={index === 0 || busy} onPress={() => run(() => moveCategory(category.id, 'up'))} size={20} />
+              <IconButton icon="pencil-outline" accessibilityLabel={t('categories.rename', { name: category.name })} onPress={() => setRenaming({ id: category.id, name: category.name })} size={20} />
+              <IconButton icon="arrow-up" accessibilityLabel={t('categories.moveUp', { name: category.name })} disabled={index === 0 || busy} onPress={() => run(() => moveCategory(category.id, 'up'))} size={20} />
               <IconButton
                 icon="arrow-down"
-                accessibilityLabel={`Move ${category.name} down`}
+                accessibilityLabel={t('categories.moveDown', { name: category.name })}
                 disabled={index === userCategories.length - 1 || busy}
                 onPress={() => run(() => moveCategory(category.id, 'down'))}
                 size={20}
               />
-              <IconButton icon="trash-can-outline" accessibilityLabel={`Delete ${category.name}`} onPress={() => confirmDelete(category)} color={colors.danger} size={20} disabled={busy} />
+              <IconButton icon="trash-can-outline" accessibilityLabel={t('categories.deleteA11y', { name: category.name })} onPress={() => confirmDelete(category)} color={colors.danger} size={20} disabled={busy} />
             </>
           )}
         </View>
@@ -134,7 +136,7 @@ export function CategoryManagementSheet({ categories, onClose, onChanged }: Prop
         .map((category) => (
           <View key={category.id} style={[styles.row, { borderBottomColor: colors.divider }]}>
             <Text style={[styles.name, { color: colors.textSecondary }]}>{category.name}</Text>
-            <Text style={[styles.builtIn, { color: colors.disabled }]}>built-in</Text>
+            <Text style={[styles.builtIn, { color: colors.disabled }]}>{t('categories.builtIn')}</Text>
           </View>
         ))}
     </BottomSheet>

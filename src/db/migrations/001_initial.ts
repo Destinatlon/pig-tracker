@@ -1,8 +1,18 @@
+import { getLocales } from 'expo-localization';
 import type { Migration } from './index';
 
-const DEFAULT_CATEGORIES = ['Dairy', 'Meat', 'Fish', 'Grains', 'Vegetables', 'Fruit', 'Drinks', 'Snacks', 'Other'];
+const DEFAULT_CATEGORIES: Record<string, string[]> = {
+  en: ['Dairy', 'Meat', 'Fish', 'Grains', 'Vegetables', 'Fruit', 'Drinks', 'Snacks', 'Other'],
+  uk: ['Молочне', "М'ясо", 'Риба', 'Крупи', 'Овочі', 'Фрукти', 'Напої', 'Снеки', 'Інше'],
+};
 
-export const UNCATEGORIZED_NAME = 'Uncategorized';
+const UNCATEGORIZED_NAMES: Record<string, string> = { en: 'Uncategorized', uk: 'Без категорії' };
+
+/** Seed names follow the device language at first launch; they are ordinary editable data afterwards. */
+function seedLanguage(): string {
+  const code = getLocales()[0]?.languageCode ?? 'en';
+  return code in DEFAULT_CATEGORIES ? code : 'en';
+}
 
 export const migration001Initial: Migration = {
   version: 1,
@@ -79,8 +89,9 @@ export const migration001Initial: Migration = {
     `);
 
     const now = new Date().toISOString();
+    const language = seedLanguage();
     let sortOrder = 0;
-    for (const name of DEFAULT_CATEGORIES) {
+    for (const name of DEFAULT_CATEGORIES[language]) {
       await db.runAsync(
         'INSERT INTO categories (name, sort_order, is_system, created_at, updated_at) VALUES (?, ?, 0, ?, ?)',
         [name, sortOrder++, now, now],
@@ -88,7 +99,7 @@ export const migration001Initial: Migration = {
     }
     await db.runAsync(
       'INSERT INTO categories (name, sort_order, is_system, created_at, updated_at) VALUES (?, ?, 1, ?, ?)',
-      [UNCATEGORIZED_NAME, sortOrder, now, now],
+      [UNCATEGORIZED_NAMES[language], sortOrder, now, now],
     );
 
     // A baseline goal so every date, including dates before the user first edits goals, has a target.

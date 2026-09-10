@@ -1,10 +1,13 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-import { getSetting, setSetting, SETTING_KEYS } from '../db/repositories/settingsRepo';
+import { getReminderSettings, getSetting, setSetting, SETTING_KEYS } from '../db/repositories/settingsRepo';
 
 const CHANNEL_ID = 'daily-reminder';
-const REMINDER_TITLE = 'Pig Tracker';
-const REMINDER_BODY = "Don't forget to finish today's food log.";
+
+export interface ReminderText {
+  title: string;
+  body: string;
+}
 
 let handlerInstalled = false;
 
@@ -52,21 +55,27 @@ export async function cancelDailyReminder(): Promise<void> {
 }
 
 /** Replaces any existing daily reminder with one at the given local time. */
-export async function scheduleDailyReminder(hour: number, minute: number): Promise<void> {
+export async function scheduleDailyReminder(hour: number, minute: number, text: ReminderText): Promise<void> {
   await ensureChannel();
   await cancelDailyReminder();
   const id = await Notifications.scheduleNotificationAsync({
-    content: { title: REMINDER_TITLE, body: REMINDER_BODY },
+    content: { title: text.title, body: text.body },
     trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour, minute, channelId: CHANNEL_ID },
   });
   await setSetting(SETTING_KEYS.reminderNotificationId, id);
 }
 
 /** Fires the reminder text immediately so the user can check it works. */
-export async function sendTestNotification(): Promise<void> {
+export async function sendTestNotification(text: ReminderText): Promise<void> {
   await ensureChannel();
   await Notifications.scheduleNotificationAsync({
-    content: { title: REMINDER_TITLE, body: REMINDER_BODY },
+    content: { title: text.title, body: text.body },
     trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 1, channelId: CHANNEL_ID },
   });
+}
+
+/** Re-schedules the reminder with new text (e.g. after a language change) if it is enabled. */
+export async function rescheduleReminderIfEnabled(text: ReminderText): Promise<void> {
+  const settings = await getReminderSettings();
+  if (settings.enabled) await scheduleDailyReminder(settings.hour, settings.minute, text);
 }
