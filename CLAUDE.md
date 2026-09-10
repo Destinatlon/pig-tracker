@@ -11,7 +11,7 @@ Specs: `offline_calorie_tracker_phase1_ai_agent_spec.md` (data/behaviour) and
 
 ## Layout
 ```
-src/domain      models, nutrition math (calculations/draft/format), numeric parsing, dates — pure, unit-tested
+src/domain      models, nutrition math (calculations/draft/format), numeric parsing, dates, goals/ (Mifflin–St Jeor estimator + tunable constants) — pure, unit-tested
 src/db          database.ts (connection + migrations), repositories/* (all SQL lives here)
 src/screens     day/, add/, products/, settings/ — screens own drafts, call repositories on explicit Save
 src/components  shared primitives (Button, TextField/NumberField, BottomSheet, Snackbar, Chip, Fab, ...)
@@ -26,6 +26,7 @@ src/notifications  daily reminder scheduling
 - Values typed by users are for the consumed amount; normalize to per-100 g via the draft `basis` (`src/domain/nutrition/draft.ts`) so repeated weight edits do not accumulate rounding.
 - Explicit Save/Discard; no auto-save, no duplicate-entry action, no meal grouping, no bottom navigation.
 - Everything must work in airplane mode.
+- Goal estimation is a suggestion only: constants live in `src/domain/goals/constants.ts`, formulas in `estimation.ts`, never in screens; results keep full precision and are rounded only for display. Applying an estimate goes through `saveGoalEffectiveFrom(today)` like a manual save. Never word it as guaranteed or medically exact.
 - No hard-coded user-facing strings: add a key to `src/i18n/en.ts` and `uk.ts`, use `t('key')` (or `tn` for plurals). Validation returns error codes; `fieldError(label, code)` renders them. Dates go through `longDate`/`shortDate`/`relativeDate` from `useI18n`.
 
 ## Commands

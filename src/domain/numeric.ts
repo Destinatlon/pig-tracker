@@ -1,7 +1,7 @@
 /** Centralized numeric parsing for form fields. Negative values are never accepted. */
 
 /** Machine-readable validation outcome; the UI turns it into a translated message. */
-export type FieldErrorCode = 'required' | 'nonNegative' | 'positive';
+export type FieldErrorCode = 'required' | 'nonNegative' | 'positive' | 'wholeNumber' | 'unrealistic';
 
 export type ParseResult<T> = { ok: true; value: T } | { ok: false; error: FieldErrorCode };
 
@@ -49,4 +49,21 @@ export function parseRequiredName(text: string): ParseResult<string> {
   const trimmed = text.trim();
   if (trimmed === '') return { ok: false, error: 'required' };
   return { ok: true, value: trimmed };
+}
+
+/** Required positive number within a plausibility range (e.g. body weight). Out-of-range values are rejected, not clamped. */
+export function parseNumberInRange(text: string, min: number, max: number): ParseResult<number> {
+  const parsed = parseNumberText(text);
+  if (parsed.kind === 'empty') return { ok: false, error: 'required' };
+  if (parsed.kind === 'invalid' || !(parsed.value > 0)) return { ok: false, error: 'positive' };
+  if (parsed.value < min || parsed.value > max) return { ok: false, error: 'unrealistic' };
+  return { ok: true, value: parsed.value };
+}
+
+/** Required whole number within a range (e.g. age). */
+export function parseIntegerInRange(text: string, min: number, max: number): ParseResult<number> {
+  const parsed = parseNumberInRange(text, min, max);
+  if (!parsed.ok) return parsed;
+  if (!Number.isInteger(parsed.value)) return { ok: false, error: 'wholeNumber' };
+  return parsed;
 }

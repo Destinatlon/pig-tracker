@@ -5,13 +5,16 @@ import { Button } from '../../components/Button';
 import { useSnackbar } from '../../components/Snackbar';
 import { NumberField } from '../../components/TextField';
 import { getGoalForDate, saveGoalEffectiveFrom } from '../../db/repositories/goalsRepo';
+import { getGoalProfile, setGoalProfile } from '../../db/repositories/settingsRepo';
 import { todayKey } from '../../domain/dates';
+import { GoalProfile } from '../../domain/goals/profile';
 import { GoalSettings, MacroKey } from '../../domain/models';
 import { formatForInput } from '../../domain/nutrition/format';
 import { FieldErrorCode, parseRequiredNonNegative } from '../../domain/numeric';
 import { useI18n } from '../../i18n';
-import { spacing, typography } from '../../theme/tokens';
+import { radius, spacing, typography } from '../../theme/tokens';
 import { useTheme } from '../../theme/ThemeProvider';
+import { EstimateGoalsSheet, EstimateResult } from './EstimateGoalsSheet';
 
 interface MacroGoalState {
   enabled: boolean;
@@ -39,6 +42,8 @@ export function GoalsTab() {
   const [errors, setErrors] = useState<Partial<Record<'calories' | MacroKey, FieldErrorCode>>>({});
   const [loaded, setLoaded] = useState<GoalSettings | null>(null);
   const [saving, setSaving] = useState(false);
+  /** Profile for the estimation sheet; loaded on demand, null while the sheet is closed. */
+  const [estimating, setEstimating] = useState<GoalProfile | null>(null);
 
   useEffect(() => {
     getGoalForDate(todayKey())
@@ -53,6 +58,43 @@ export function GoalsTab() {
       })
       .catch((error) => console.error('Failed to load goals', error));
   }, []);
+
+  const openEstimate = async () => {
+    try {
+      setEstimating(await getGoalProfile());
+    } catch (error) {
+      Alert.alert(t('common.somethingWrong'), String(error));
+    }
+  };
+
+  /**
+   * Applies an estimate through the same effective-from-today mechanism as manual saves.
+   * Carbs and fat keep whatever the form currently holds; earlier goal rows are untouched.
+   */
+  const applyEstimate = async ({ profile, calories, protein }: EstimateResult) => {
+    const keepMacro = (key: MacroKey): number | null => {
+      if (!macros[key].enabled) return null;
+      const parsed = parseRequiredNonNegative(macros[key].text);
+      return parsed.ok ? parsed.value : (loaded?.[key] ?? null);
+    };
+    await setGoalProfile(profile);
+    await saveGoalEffectiveFrom(todayKey(), {
+      calories,
+      protein: protein ?? keepMacro('protein'),
+      carbs: keepMacro('carbs'),
+      fat: keepMacro('fat'),
+    });
+    const goal = await getGoalForDate(todayKey());
+    setLoaded(goal);
+    setCaloriesText(formatForInput(goal.calories));
+    setMacros({
+      protein: { enabled: goal.protein !== null, text: formatForInput(goal.protein) },
+      carbs: { enabled: goal.carbs !== null, text: formatForInput(goal.carbs) },
+      fat: { enabled: goal.fat !== null, text: formatForInput(goal.fat) },
+    });
+    setErrors({});
+    snackbar.show({ message: t('estimate.applied') });
+  };
 
   const save = async () => {
     if (saving) return;
@@ -84,6 +126,10 @@ export function GoalsTab() {
   return (
     <KeyboardAvoidingView style={styles.container} behavior="padding">
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+        <View style={[styles.estimateBox, { backgroundColor: colors.surface, borderColor: colors.divider }]}>
+          <Text style={[styles.estimateHint, { color: colors.textSecondary }]}>{t('goals.estimateHint')}</Text>
+          <Button title={t('goals.estimate')} variant="secondary" onPress={openEstimate} disabled={!loaded} />
+        </View>
         <NumberField
           label={t('goals.dailyCalories')}
           required
@@ -134,6 +180,14 @@ export function GoalsTab() {
       <View style={[styles.footer, { backgroundColor: colors.surface, borderTopColor: colors.divider, paddingBottom: insets.bottom + spacing.md }]}>
         <Button title={t('goals.save')} onPress={save} loading={saving} disabled={!loaded} />
       </View>
+      {estimating ? (
+        <EstimateGoalsSheet
+          initialProfile={estimating}
+          currentCalories={loaded?.calories ?? null}
+          onClose={() => setEstimating(null)}
+          onApply={applyEstimate}
+        />
+      ) : null}
     </KeyboardAvoidingView>
   );
 }
@@ -141,6 +195,8 @@ export function GoalsTab() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: spacing.lg },
+  estimateBox: { borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.lg },
+  estimateHint: { ...typography.secondary, marginBottom: spacing.md },
   macroRow: { paddingTop: spacing.md, marginTop: spacing.xs, borderTopWidth: StyleSheet.hairlineWidth },
   macroHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 44, marginBottom: spacing.xs },
   macroLabel: { ...typography.body },

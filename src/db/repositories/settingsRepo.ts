@@ -1,3 +1,4 @@
+import { GoalProfile, profileFromJson, profileToJson } from '../../domain/goals/profile';
 import { ReminderSettings, ThemePreference } from '../../domain/models';
 import { getDb } from '../database';
 
@@ -7,6 +8,7 @@ export const SETTING_KEYS = {
   reminderEnabled: 'reminder_enabled',
   reminderTime: 'reminder_time',
   reminderNotificationId: 'reminder_notification_id',
+  goalProfile: 'goal_profile',
 } as const;
 
 export async function getSetting(key: string): Promise<string | null> {
@@ -58,4 +60,13 @@ export async function getReminderSettings(): Promise<ReminderSettings> {
 export async function setReminderSettings(settings: ReminderSettings): Promise<void> {
   await setSetting(SETTING_KEYS.reminderEnabled, settings.enabled ? '1' : '0');
   await setSetting(SETTING_KEYS.reminderTime, `${settings.hour}:${settings.minute < 10 ? '0' : ''}${settings.minute}`);
+}
+
+/** Current estimation profile (age, sex, height, weight, activity, goal). Missing fields are null. */
+export async function getGoalProfile(): Promise<GoalProfile> {
+  return profileFromJson(await getSetting(SETTING_KEYS.goalProfile));
+}
+
+export async function setGoalProfile(profile: GoalProfile): Promise<void> {
+  await setSetting(SETTING_KEYS.goalProfile, profileToJson(profile));
 }
