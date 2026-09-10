@@ -74,7 +74,7 @@ export function SavedTab({ date, onDone }: Props) {
       <View style={styles.searchBox}>
         <TextField value={search} onChangeText={onSearch} placeholder="Search saved products" autoCorrect={false} returnKeyType="search" accessibilityLabel="Search saved products" containerStyle={styles.searchField} />
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} keyboardShouldPersistTaps="handled">
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipBar} contentContainerStyle={styles.chips} keyboardShouldPersistTaps="handled">
         <Chip label="All" selected={categoryId === null} onPress={() => onCategory(null)} />
         {categories.map((category) => (
           <Chip key={category.id} label={category.name} selected={categoryId === category.id} onPress={() => onCategory(category.id)} />
@@ -123,6 +123,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   searchBox: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
   searchField: { marginBottom: spacing.sm },
+  chipBar: { flexGrow: 0 },
   chips: { paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
   list: { paddingBottom: spacing.xl },
   header: { ...typography.label, textTransform: 'uppercase', paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.xs },

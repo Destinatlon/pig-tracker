@@ -62,6 +62,8 @@ function SaveAsProductSheet({ entry, onClose }: { entry: DayEntry; onClose: () =
   const [texts, setTexts] = useState<Per100gTexts>(() => per100gTextsFrom(entry));
   const [errors, setErrors] = useState<DraftErrors>({});
   const [saving, setSaving] = useState(false);
+  const dirty = name !== entry.productName || texts.calories !== per100gTextsFrom(entry).calories || texts.protein !== per100gTextsFrom(entry).protein || texts.carbs !== per100gTextsFrom(entry).carbs || texts.fat !== per100gTextsFrom(entry).fat;
+  const requestClose = () => confirmDiscard(dirty, onClose);
 
   useEffect(() => {
     Promise.all([listCategories(), getUncategorizedCategoryId()])
@@ -95,11 +97,11 @@ function SaveAsProductSheet({ entry, onClose }: { entry: DayEntry; onClose: () =
   return (
     <BottomSheet
       visible
-      onRequestClose={onClose}
+      onRequestClose={requestClose}
       title="Save as product"
       footer={
         <>
-          <Button title="Cancel" variant="secondary" onPress={onClose} style={styles.footerButton} />
+          <Button title="Cancel" variant="secondary" onPress={requestClose} style={styles.footerButton} />
           <Button title="Save" onPress={save} loading={saving} style={styles.footerButton} />
         </>
       }
@@ -119,6 +121,8 @@ function SaveAsVariantSheet({ entry, source, onClose }: { entry: DayEntry; sourc
   const [texts, setTexts] = useState<Per100gTexts>(() => per100gTextsFrom(entry));
   const [errors, setErrors] = useState<DraftErrors>({});
   const [saving, setSaving] = useState(false);
+  const dirty = variantName !== '' || texts.calories !== per100gTextsFrom(entry).calories || texts.protein !== per100gTextsFrom(entry).protein || texts.carbs !== per100gTextsFrom(entry).carbs || texts.fat !== per100gTextsFrom(entry).fat;
+  const requestClose = () => confirmDiscard(dirty, onClose);
 
   const save = async () => {
     if (saving) return;
@@ -143,11 +147,11 @@ function SaveAsVariantSheet({ entry, source, onClose }: { entry: DayEntry; sourc
   return (
     <BottomSheet
       visible
-      onRequestClose={onClose}
+      onRequestClose={requestClose}
       title="Save as new variant"
       footer={
         <>
-          <Button title="Cancel" variant="secondary" onPress={onClose} style={styles.footerButton} />
+          <Button title="Cancel" variant="secondary" onPress={requestClose} style={styles.footerButton} />
           <Button title="Save" onPress={save} loading={saving} style={styles.footerButton} />
         </>
       }
@@ -158,6 +162,17 @@ function SaveAsVariantSheet({ entry, source, onClose }: { entry: DayEntry; sourc
       <Per100gFields texts={texts} onChange={setTexts} errors={errors} />
     </BottomSheet>
   );
+}
+
+function confirmDiscard(dirty: boolean, onClose: () => void) {
+  if (!dirty) {
+    onClose();
+    return;
+  }
+  Alert.alert('Discard unsaved changes?', undefined, [
+    { text: 'Keep editing', style: 'cancel' },
+    { text: 'Discard', style: 'destructive', onPress: onClose },
+  ]);
 }
 
 const styles = StyleSheet.create({

@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, BackHandler, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, BackHandler, FlatList, KeyboardAvoidingView, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../../components/Button';
 import { applyBulkDayChanges, BulkDayChanges } from '../../db/repositories/dayEntriesRepo';
@@ -129,7 +129,7 @@ export function BulkEditMode({ date, entries, onSaved, onCancel }: Props) {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.bulkEditBackground }]}>
+    <KeyboardAvoidingView style={[styles.container, { backgroundColor: colors.bulkEditBackground }]} behavior="padding">
       <FlatList
         data={rows}
         keyExtractor={(row) => row.key}
@@ -153,7 +153,7 @@ export function BulkEditMode({ date, entries, onSaved, onCancel }: Props) {
         <Button title="Discard" variant="secondary" onPress={requestCancel} style={styles.footerButton} />
         <Button title="Save changes" onPress={save} loading={saving} style={styles.footerButton} />
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../../components/Button';
 import { useSnackbar } from '../../components/Snackbar';
@@ -80,7 +80,7 @@ export function GoalsTab() {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView style={styles.container} behavior="padding">
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
         <NumberField
           label="Daily calories"
@@ -132,7 +132,7 @@ export function GoalsTab() {
       <View style={[styles.footer, { backgroundColor: colors.surface, borderTopColor: colors.divider, paddingBottom: insets.bottom + spacing.md }]}>
         <Button title="Save goals" onPress={save} loading={saving} disabled={!loaded} />
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

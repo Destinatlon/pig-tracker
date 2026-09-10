@@ -80,7 +80,7 @@ export function ProductsScreen({ navigation }: DrawerRouteProps<'Products'>) {
       <View style={styles.searchBox}>
         <TextField value={search} onChangeText={onSearch} placeholder="Search products" autoCorrect={false} returnKeyType="search" accessibilityLabel="Search products" containerStyle={styles.searchField} />
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} keyboardShouldPersistTaps="handled">
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipBar} contentContainerStyle={styles.chips} keyboardShouldPersistTaps="handled">
         <Chip label="All" selected={categoryId === null} onPress={() => onCategory(null)} onLongPress={() => setSheet({ kind: 'categories' })} accessibilityHint="Long press to manage categories" />
         {categories.map((category) => (
           <Chip
@@ -127,6 +127,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   searchBox: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
   searchField: { marginBottom: spacing.sm },
+  chipBar: { flexGrow: 0 },
   chips: { paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
   list: { paddingBottom: 96 },
 });
