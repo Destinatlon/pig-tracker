@@ -10,10 +10,9 @@
     "android": {
       "package": "com.pigtracker.app",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#1466D8"
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
@@ -25,12 +24,21 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/android-icon-monochrome.png",
-          "color": "#4F7CAC"
+          "icon": "./assets/notification-icon.png",
+          "color": "#1466D8"
         }
       ],
       "expo-sqlite",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#FFFFFF"
+        }
+      ]
     ]
   }
 }

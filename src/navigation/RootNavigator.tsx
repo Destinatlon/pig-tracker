@@ -7,6 +7,7 @@ import { DayScreen } from '../screens/day/DayScreen';
 import { ProductsScreen } from '../screens/products/ProductsScreen';
 import { SettingsScreen } from '../screens/settings/SettingsScreen';
 import { useTheme } from '../theme/ThemeProvider';
+import { DrawerContent } from './DrawerContent';
 import { DrawerParamList, RootStackParamList } from './types';
 
 const Drawer = createDrawerNavigator<DrawerParamList>();
@@ -17,6 +18,7 @@ function MainDrawer() {
   return (
     <Drawer.Navigator
       initialRouteName="Day"
+      drawerContent={(props) => <DrawerContent {...props} />}
       screenOptions={{
         headerShown: false,
         drawerType: 'front',
