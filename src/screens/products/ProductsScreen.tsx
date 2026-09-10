@@ -36,6 +36,7 @@ export function ProductsScreen({ navigation }: DrawerRouteProps<'Products'>) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [uncategorizedId, setUncategorizedId] = useState<number | null>(null);
   const [items, setItems] = useState<LibraryItem[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [sheet, setSheet] = useState<Sheet>({ kind: 'none' });
   const requestId = useRef(0);
   const filter = useRef({ search: '', categoryId: null as number | null });
@@ -47,6 +48,7 @@ export function ProductsScreen({ navigation }: DrawerRouteProps<'Products'>) {
     setCategories(cats);
     setItems(list);
     setUncategorizedId(uncategorized);
+    setLoaded(true);
     if (filter.current.categoryId !== null && !cats.some((c) => c.id === filter.current.categoryId)) {
       filter.current = { ...filter.current, categoryId: null };
       setCategoryId(null);
@@ -101,7 +103,7 @@ export function ProductsScreen({ navigation }: DrawerRouteProps<'Products'>) {
         renderItem={({ item }) => <ProductLibraryRow item={item} onPress={(picked) => setSheet({ kind: 'edit', item: picked })} />}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.list}
-        ListEmptyComponent={<EmptyState message={search || categoryId !== null ? t('products.noMatching') : t('products.empty')} />}
+        ListEmptyComponent={loaded ? <EmptyState message={search || categoryId !== null ? t('products.noMatching') : t('products.empty')} /> : null}
       />
       <Fab onPress={() => setSheet({ kind: 'create' })} accessibilityLabel={t('products.create')} />
       {sheet.kind === 'create' && uncategorizedId !== null ? (

@@ -29,6 +29,7 @@ export function SavedTab({ date, onDone }: Props) {
   const [library, setLibrary] = useState<LibraryItem[]>([]);
   const [recent, setRecent] = useState<LibraryItem[]>([]);
   const [picked, setPicked] = useState<LibraryItem | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const requestId = useRef(0);
 
   const load = useCallback(async (searchText: string, category: number | null) => {
@@ -38,6 +39,7 @@ export function SavedTab({ date, onDone }: Props) {
     setCategories(cats);
     setLibrary(items);
     setRecent(recentItems);
+    setLoaded(true);
   }, []);
 
   useEffect(() => {
@@ -94,7 +96,7 @@ export function SavedTab({ date, onDone }: Props) {
             <SavedRow item={row.item} onPress={setPicked} />
           )
         }
-        ListEmptyComponent={<EmptyState message={library.length === 0 && !search && categoryId === null ? t('add.noSavedProducts') : t('add.noMatching')} />}
+        ListEmptyComponent={loaded ? <EmptyState message={library.length === 0 && !search && categoryId === null ? t('add.noSavedProducts') : t('add.noMatching')} /> : null}
       />
       {picked ? <SavedAddSheet key={picked.variantId} item={picked} date={date} onClose={() => setPicked(null)} onAdded={onDone} /> : null}
     </View>
