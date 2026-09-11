@@ -1,5 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 import { migration001Initial } from './001_initial';
+import { migration002SeedProducts } from './002_seed_products';
 
 export interface Migration {
   version: number;
@@ -8,4 +9,4 @@ export interface Migration {
 }
 
 /** Append new migrations here. Never edit an already-shipped migration. */
-export const migrations: readonly Migration[] = [migration001Initial];
+export const migrations: readonly Migration[] = [migration001Initial, migration002SeedProducts];
