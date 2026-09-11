@@ -8,9 +8,10 @@ import { RootStackScreenProps } from '../../navigation/types';
 import { typography } from '../../theme/tokens';
 import { useTheme } from '../../theme/ThemeProvider';
 import { ManualTab } from './ManualTab';
+import { RecipesTab } from './RecipesTab';
 import { SavedTab } from './SavedTab';
 
-type Tab = 'manual' | 'saved';
+type Tab = 'manual' | 'saved' | 'recipes';
 
 /** Full-screen add flow. Always opens on Manual; the previous tab is deliberately not remembered. */
 export function AddProductScreen({ navigation, route }: RootStackScreenProps<'AddProduct'>) {
@@ -21,6 +22,7 @@ export function AddProductScreen({ navigation, route }: RootStackScreenProps<'Ad
   const tabs = [
     { key: 'manual', label: t('add.tabManual') },
     { key: 'saved', label: t('add.tabSaved') },
+    { key: 'recipes', label: t('add.tabRecipes') },
   ] as const;
 
   return (
@@ -38,8 +40,10 @@ export function AddProductScreen({ navigation, route }: RootStackScreenProps<'Ad
       />
       {tab === 'manual' ? (
         <ManualTab date={date} onDone={() => navigation.goBack()} onUseSaved={() => setTab('saved')} />
-      ) : (
+      ) : tab === 'saved' ? (
         <SavedTab date={date} onDone={() => navigation.goBack()} />
+      ) : (
+        <RecipesTab date={date} onDone={() => navigation.goBack()} />
       )}
     </View>
   );

@@ -77,6 +77,45 @@ export interface DayEntry extends NutritionPer100g {
 
 export type NewDayEntry = Omit<DayEntry, 'id' | 'sortOrder' | 'createdAt' | 'updatedAt'>;
 
+/** One ingredient of a recipe. A snapshot, exactly like a day entry: the library reference is
+ * kept only so the user can explicitly refresh it, never to recompute automatically. */
+export interface RecipeIngredient extends NutritionPer100g {
+  id: number;
+  recipeId: number;
+  sortOrder: number;
+  productId: number | null;
+  variantId: number | null;
+  productName: string;
+  variantName: string | null;
+  weightGrams: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Recipe {
+  id: number;
+  name: string;
+  description: string;
+  /** Weight of the finished dish; null means the sum of the ingredient weights is used. */
+  cookedWeightGrams: number | null;
+  /** When true the per-100-g values below replace the calculated ones. */
+  macrosOverridden: boolean;
+  overridePer100g: NutritionPer100g | null;
+  lastUsedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RecipeWithIngredients extends Recipe {
+  ingredients: RecipeIngredient[];
+}
+
+export type NewRecipeIngredient = Omit<RecipeIngredient, 'id' | 'recipeId' | 'sortOrder' | 'createdAt' | 'updatedAt'>;
+
+export function recipeIngredientDisplayName(ingredient: { productName: string; variantName: string | null }): string {
+  return ingredient.variantName ? `${ingredient.productName} — ${ingredient.variantName}` : ingredient.productName;
+}
+
 export interface GoalSettings {
   id: number;
   calories: number;

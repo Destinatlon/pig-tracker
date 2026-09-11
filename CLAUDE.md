@@ -1,7 +1,9 @@
-# Pig Tracker — offline Android calorie tracker (Phase 1)
+# Pig Tracker — offline Android calorie tracker (Phase 1 + recipes)
 
 Specs: `offline_calorie_tracker_phase1_ai_agent_spec.md` (data/behaviour) and
 `offline_calorie_tracker_phase1_design_ai_agent_spec.md` (UI/UX + RN coding rules). Read both before changing behaviour.
+The recipe system is listed as out of scope in the Phase 1 spec; the project owner has since moved it into scope,
+so the spec's section 25 no longer applies to it. Everything else in that list still does.
 
 ## Stack
 - Expo SDK 57 / React Native 0.86, TypeScript strict, no Redux.
@@ -11,9 +13,9 @@ Specs: `offline_calorie_tracker_phase1_ai_agent_spec.md` (data/behaviour) and
 
 ## Layout
 ```
-src/domain      models, nutrition math (calculations/draft/format), numeric parsing, dates, goals/ (Mifflin–St Jeor estimator + tunable constants) — pure, unit-tested
-src/db          database.ts (connection + migrations), repositories/* (all SQL lives here)
-src/screens     day/, add/, products/, settings/ — screens own drafts, call repositories on explicit Save
+src/domain      models, nutrition math (calculations/draft/format), numeric parsing, dates, goals/ (Mifflin–St Jeor estimator + tunable constants), recipes/ (totals + editor draft) — pure, unit-tested
+src/db          database.ts (connection + migrations), repositories/* (all SQL lives here), seed/ (preset product list)
+src/screens     day/, add/, products/, recipes/, settings/ — screens own drafts, call repositories on explicit Save
 src/components  shared primitives (Button, TextField/NumberField, BottomSheet, Snackbar, Chip, Fab, ...)
 src/theme       semantic colour tokens + ThemeProvider (system/light/dark)
 src/i18n        en.ts (source of truth) + uk.ts dictionaries, I18nProvider/useI18n, plural rules; a test enforces key parity
@@ -27,6 +29,10 @@ src/notifications  daily reminder scheduling
 - Explicit Save/Discard; no auto-save, no duplicate-entry action, no meal grouping, no bottom navigation.
 - Everything must work in airplane mode.
 - Goal estimation is a suggestion only: constants live in `src/domain/goals/constants.ts`, formulas in `estimation.ts`, never in screens; results keep full precision and are rounded only for display. Applying an estimate goes through `saveGoalEffectiveFrom(today)` like a manual save. Never word it as guaranteed or medically exact.
+- Recipes are a library concept, not a day concept. A recipe's ingredients are snapshots like day entries; the
+  product link is kept only so the user can explicitly refresh one. Per-100-g values assume an evenly mixed dish
+  and must always be presented as approximate. A macro any ingredient leaves unknown stays `null` for the whole
+  recipe — never a partial sum passed off as complete. Logging a recipe writes an ordinary `day_entries` snapshot.
 - No hard-coded user-facing strings: add a key to `src/i18n/en.ts` and `uk.ts`, use `t('key')` (or `tn` for plurals). Validation returns error codes; `fieldError(label, code)` renders them. Dates go through `longDate`/`shortDate`/`relativeDate` from `useI18n`.
 
 ## Commands

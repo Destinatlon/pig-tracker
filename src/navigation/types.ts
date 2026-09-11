@@ -6,12 +6,15 @@ import { DateKey } from '../domain/models';
 export type DrawerParamList = {
   Day: undefined;
   Products: undefined;
+  Recipes: undefined;
   Settings: undefined;
 };
 
 export type RootStackParamList = {
   Main: NavigatorScreenParams<DrawerParamList> | undefined;
   AddProduct: { date: DateKey };
+  /** Omit the id to build a new recipe. */
+  RecipeEditor: { recipeId?: number };
 };
 
 export type RootStackScreenProps<T extends keyof RootStackParamList> = NativeStackScreenProps<RootStackParamList, T>;

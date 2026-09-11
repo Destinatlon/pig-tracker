@@ -79,35 +79,38 @@ export function ManualTab({ date, onDone }: Props) {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior="padding">
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
-        <NutritionDraftFields draft={draft} onChange={change} errors={errors} autoFocusName />
-        {suggestions.length > 0 ? (
-          <View style={styles.suggestions}>
-            <Text style={[styles.suggestionTitle, { color: colors.textSecondary }]}>{t('add.suggestionsTitle')}</Text>
-            {suggestions.map((item) => (
-              <Pressable
-                key={item.variantId}
-                onPress={() => setSavedPick(item)}
-                accessibilityRole="button"
-                accessibilityLabel={t('add.useSavedA11y', { name: libraryItemDisplayName(item) })}
-                style={({ pressed }) => [styles.suggestion, { opacity: pressed ? 0.6 : 1 }]}
-              >
-                <MaterialCommunityIcons name="bookmark-outline" size={18} color={colors.accent} />
-                <Text style={[styles.suggestionLabel, { color: colors.accent }]} numberOfLines={1}>
-                  {libraryItemDisplayName(item)}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        ) : null}
-        <Text style={[styles.hint, { color: colors.textSecondary }]}>{t('add.hint')}</Text>
-      </ScrollView>
-      <View style={[styles.footer, { backgroundColor: colors.surface, borderTopColor: colors.divider, paddingBottom: insets.bottom + spacing.md }]}>
-        <Button title={t('common.add')} onPress={add} loading={saving} />
-      </View>
+    <View style={styles.container}>
+      <KeyboardAvoidingView style={styles.container} behavior="padding">
+        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+          <NutritionDraftFields draft={draft} onChange={change} errors={errors} autoFocusName />
+          {suggestions.length > 0 ? (
+            <View style={styles.suggestions}>
+              <Text style={[styles.suggestionTitle, { color: colors.textSecondary }]}>{t('add.suggestionsTitle')}</Text>
+              {suggestions.map((item) => (
+                <Pressable
+                  key={item.variantId}
+                  onPress={() => setSavedPick(item)}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('add.useSavedA11y', { name: libraryItemDisplayName(item) })}
+                  style={({ pressed }) => [styles.suggestion, { opacity: pressed ? 0.6 : 1 }]}
+                >
+                  <MaterialCommunityIcons name="bookmark-outline" size={18} color={colors.accent} />
+                  <Text style={[styles.suggestionLabel, { color: colors.accent }]} numberOfLines={1}>
+                    {libraryItemDisplayName(item)}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
+          <Text style={[styles.hint, { color: colors.textSecondary }]}>{t('add.hint')}</Text>
+        </ScrollView>
+        <View style={[styles.footer, { backgroundColor: colors.surface, borderTopColor: colors.divider, paddingBottom: insets.bottom + spacing.md }]}>
+          <Button title={t('common.add')} onPress={add} loading={saving} />
+        </View>
+      </KeyboardAvoidingView>
+      {/* Outside the avoider: the sheet is a Modal with its own, and nesting the two makes it oscillate. */}
       {savedPick ? <SavedAddSheet key={savedPick.variantId} item={savedPick} date={date} onClose={() => setSavedPick(null)} onAdded={onDone} /> : null}
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 

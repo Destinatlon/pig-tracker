@@ -1,5 +1,5 @@
 import React from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { radius, spacing, typography } from '../theme/tokens';
 import { useI18n } from '../i18n';
@@ -58,6 +58,76 @@ export function BottomSheet({ visible, onRequestClose, title, headerRight, child
   );
 }
 
+interface ListProps<T> {
+  visible: boolean;
+  onRequestClose: () => void;
+  title?: string;
+  headerRight?: React.ReactNode;
+  /** Fixed content between the title and the list, e.g. a search field. */
+  header?: React.ReactNode;
+  data: readonly T[];
+  keyExtractor: (item: T) => string;
+  renderItem: (item: T) => React.ReactElement | null;
+  ListEmptyComponent?: React.ReactElement | null;
+  footer?: React.ReactNode;
+}
+
+/**
+ * Bottom sheet whose body is a virtualized list. Use this instead of mapping rows into the
+ * scrolling `BottomSheet` whenever the list can grow with the user's library.
+ */
+export function ListBottomSheet<T>({
+  visible,
+  onRequestClose,
+  title,
+  headerRight,
+  header,
+  data,
+  keyExtractor,
+  renderItem,
+  ListEmptyComponent,
+  footer,
+}: ListProps<T>) {
+  const { colors } = useTheme();
+  const { t } = useI18n();
+  const insets = useSafeAreaInsets();
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onRequestClose} statusBarTranslucent navigationBarTranslucent>
+      <View style={styles.root}>
+        <Pressable
+          style={[StyleSheet.absoluteFill, { backgroundColor: colors.backdrop }]}
+          onPress={onRequestClose}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.close')}
+        />
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.avoider} pointerEvents="box-none">
+          <View style={[styles.sheet, styles.listSheet, { backgroundColor: colors.surface, paddingBottom: insets.bottom }]}>
+            <View style={[styles.handle, { backgroundColor: colors.divider }]} />
+            {title || headerRight ? (
+              <View style={styles.header}>
+                <Text style={[styles.title, { color: colors.textPrimary }]} numberOfLines={2}>
+                  {title}
+                </Text>
+                {headerRight}
+              </View>
+            ) : null}
+            {header}
+            <FlatList
+              data={data as T[]}
+              keyExtractor={keyExtractor}
+              renderItem={({ item }) => renderItem(item)}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.listContent}
+              ListEmptyComponent={ListEmptyComponent}
+            />
+            {footer ? <View style={[styles.footer, { borderTopColor: colors.divider }]}>{footer}</View> : null}
+          </View>
+        </KeyboardAvoidingView>
+      </View>
+    </Modal>
+  );
+}
+
 const styles = StyleSheet.create({
   root: { flex: 1 },
   avoider: { flex: 1, justifyContent: 'flex-end' },
@@ -76,6 +146,8 @@ const styles = StyleSheet.create({
   },
   title: { ...typography.title, flex: 1 },
   scroll: { flexGrow: 0 },
+  listSheet: { height: '80%' },
+  listContent: { paddingBottom: spacing.lg },
   content: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.lg },
   footer: {
     flexDirection: 'row',

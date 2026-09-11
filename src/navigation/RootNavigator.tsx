@@ -5,6 +5,8 @@ import React from 'react';
 import { AddProductScreen } from '../screens/add/AddProductScreen';
 import { DayScreen } from '../screens/day/DayScreen';
 import { ProductsScreen } from '../screens/products/ProductsScreen';
+import { RecipeEditorScreen } from '../screens/recipes/RecipeEditorScreen';
+import { RecipesScreen } from '../screens/recipes/RecipesScreen';
 import { SettingsScreen } from '../screens/settings/SettingsScreen';
 import { useI18n } from '../i18n';
 import { useTheme } from '../theme/ThemeProvider';
@@ -33,6 +35,7 @@ function MainDrawer() {
     >
       <Drawer.Screen name="Day" component={DayScreen} options={{ title: t('nav.day') }} />
       <Drawer.Screen name="Products" component={ProductsScreen} options={{ title: t('nav.products') }} />
+      <Drawer.Screen name="Recipes" component={RecipesScreen} options={{ title: t('nav.recipes') }} />
       <Drawer.Screen name="Settings" component={SettingsScreen} options={{ title: t('nav.settings') }} />
     </Drawer.Navigator>
   );
@@ -57,6 +60,7 @@ export function RootNavigator() {
       <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
         <Stack.Screen name="Main" component={MainDrawer} />
         <Stack.Screen name="AddProduct" component={AddProductScreen} options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="RecipeEditor" component={RecipeEditorScreen} options={{ animation: 'slide_from_right' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
