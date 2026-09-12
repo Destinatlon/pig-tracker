@@ -8,6 +8,7 @@ import { ProductsScreen } from '../screens/products/ProductsScreen';
 import { RecipeEditorScreen } from '../screens/recipes/RecipeEditorScreen';
 import { RecipesScreen } from '../screens/recipes/RecipesScreen';
 import { SettingsScreen } from '../screens/settings/SettingsScreen';
+import { StatisticsScreen } from '../screens/statistics/StatisticsScreen';
 import { useI18n } from '../i18n';
 import { useTheme } from '../theme/ThemeProvider';
 import { DrawerContent } from './DrawerContent';
@@ -34,6 +35,7 @@ function MainDrawer() {
       }}
     >
       <Drawer.Screen name="Day" component={DayScreen} options={{ title: t('nav.day') }} />
+      <Drawer.Screen name="Statistics" component={StatisticsScreen} options={{ title: t('nav.statistics') }} />
       <Drawer.Screen name="Products" component={ProductsScreen} options={{ title: t('nav.products') }} />
       <Drawer.Screen name="Recipes" component={RecipesScreen} options={{ title: t('nav.recipes') }} />
       <Drawer.Screen name="Settings" component={SettingsScreen} options={{ title: t('nav.settings') }} />

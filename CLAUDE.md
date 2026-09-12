@@ -2,6 +2,8 @@
 
 Specs: `offline_calorie_tracker_phase1_ai_agent_spec.md` (data/behaviour) and
 `offline_calorie_tracker_phase1_design_ai_agent_spec.md` (UI/UX + RN coding rules). Read both before changing behaviour.
+`offline_calorie_tracker_phase2_statistics_ai_agent_spec.md` covers the Statistics screen and goal ranges; for that work it
+overrides the Phase 1 "charts and analytics are out of scope" statements.
 The recipe system is listed as out of scope in the Phase 1 spec; the project owner has since moved it into scope,
 so the spec's section 25 no longer applies to it. Everything else in that list still does.
 
@@ -13,9 +15,9 @@ so the spec's section 25 no longer applies to it. Everything else in that list s
 
 ## Layout
 ```
-src/domain      models, nutrition math (calculations/draft/format), numeric parsing, dates, goals/ (Mifflin–St Jeor estimator + tunable constants), recipes/ (totals + editor draft) — pure, unit-tested
+src/domain      models, nutrition math (calculations/draft/format), numeric parsing, dates, goals/ (Mifflin–St Jeor estimator + tunable constants, goal-range validation, effective-dated lookup), recipes/ (totals + editor draft), statistics/ (calendar periods, classification, period summaries) — pure, unit-tested
 src/db          database.ts (connection + migrations), repositories/* (all SQL lives here), seed/ (preset product list)
-src/screens     day/, add/, products/, recipes/, settings/ — screens own drafts, call repositories on explicit Save
+src/screens     day/, add/, products/, recipes/, statistics/, settings/ — screens own drafts, call repositories on explicit Save
 src/components  shared primitives (Button, TextField/NumberField, BottomSheet, Snackbar, Chip, Fab, ...)
 src/theme       semantic colour tokens + ThemeProvider (system/light/dark)
 src/i18n        en.ts (source of truth) + uk.ts dictionaries, I18nProvider/useI18n, plural rules; a test enforces key parity
@@ -29,6 +31,10 @@ src/notifications  daily reminder scheduling
 - Explicit Save/Discard; no auto-save, no duplicate-entry action, no meal grouping, no bottom navigation.
 - Everything must work in airplane mode.
 - Goal estimation is a suggestion only: constants live in `src/domain/goals/constants.ts`, formulas in `estimation.ts`, never in screens; results keep full precision and are rounded only for display. Applying an estimate goes through `saveGoalEffectiveFrom(today)` like a manual save. Never word it as guaranteed or medically exact.
+- Goals are ranges (`GoalRange`: optional `minimum`/`maximum`), not point targets. Equality with a boundary is within range. A statistic for a date uses the goal row in force on that date — never today's goal applied retroactively.
+- Every goal is a single number. Calories are one required daily target (`GoalSettings.calories: number`) — storage never holds a calorie range. A macro goal is one value plus a `GoalBound` direction (`no less than` / `no more than`): one field and a radio pair, never two fields; a macro with both boundaries `null` is disabled.
+- The ±10% tolerance around the calorie target exists **only** in statistics, in `goalRangeFor` — it is how a day is coloured, never something stored or re-applied on save. A macro is compared against its one boundary exactly as entered, with no tolerance.
+- Statistics are derived, never stored: no cached aggregate tables. Empty days are missing data, not zero intake; today is charted but excluded from averages, status counts and highest/lowest; a macro day with any unknown entry is `incomplete` and is never classified as adherence.
 - Recipes are a library concept, not a day concept. A recipe's ingredients are snapshots like day entries; the
   product link is kept only so the user can explicitly refresh one. Per-100-g values assume an evenly mixed dish
   and must always be presented as approximate. A macro any ingredient leaves unknown stays `null` for the whole

@@ -116,17 +116,30 @@ export function recipeIngredientDisplayName(ingredient: { productName: string; v
   return ingredient.variantName ? `${ingredient.productName} — ${ingredient.variantName}` : ingredient.productName;
 }
 
+/** Nutrients that can carry a goal. Calories always have one; the macros may be disabled. */
+export type NutrientKey = 'calories' | MacroKey;
+
+/**
+ * A macro goal: one boundary and the direction it is compared in. Either side may be absent;
+ * both absent means the macro has no goal. Full precision in storage, rounded only for display.
+ */
+export interface GoalRange {
+  minimum: number | null;
+  maximum: number | null;
+}
+
 export interface GoalSettings {
   id: number;
+  /** A single daily target. Statistics derive a tolerance band from it; storage keeps one number. */
   calories: number;
-  protein: number | null;
-  carbs: number | null;
-  fat: number | null;
+  protein: GoalRange;
+  carbs: GoalRange;
+  fat: GoalRange;
   effectiveFrom: DateKey;
   createdAt: string;
 }
 
-export type GoalInput = Omit<GoalSettings, 'id' | 'effectiveFrom' | 'createdAt'>;
+export type GoalInput = Pick<GoalSettings, NutrientKey>;
 
 export interface ReminderSettings {
   enabled: boolean;

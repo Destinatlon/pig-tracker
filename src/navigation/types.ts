@@ -4,7 +4,9 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { DateKey } from '../domain/models';
 
 export type DrawerParamList = {
-  Day: undefined;
+  /** `date` opens the Day screen on that exact date, e.g. from a Statistics column. */
+  Day: { date?: DateKey } | undefined;
+  Statistics: undefined;
   Products: undefined;
   Recipes: undefined;
   Settings: undefined;

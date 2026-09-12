@@ -1,7 +1,7 @@
 import { getLocales } from 'expo-localization';
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { setLanguagePreference } from '../db/repositories/settingsRepo';
-import { DateNames, describeDate, formatLongDate, formatShortDate } from '../domain/dates';
+import { DateNames, describeDate, formatLongDate, formatShortDate, monthParts } from '../domain/dates';
 import { setDecimalSeparator } from '../domain/nutrition/format';
 import type { FieldErrorCode } from '../domain/numeric';
 import { en } from './en';
@@ -25,6 +25,8 @@ export interface I18n {
   longDate: (key: string) => string;
   shortDate: (key: string) => string;
   relativeDate: (key: string) => string;
+  /** Standalone month name and year, for a chart or period title. */
+  monthName: (key: string) => { month: string; year: string };
 }
 
 const I18nContext = createContext<I18n | null>(null);
@@ -53,6 +55,7 @@ export function createTranslator(locale: Locale) {
     weekdays: dict.weekdays,
     months: dict.months,
     monthsShort: dict.monthsShort,
+    monthsStandalone: dict.monthsStandalone,
     today: dict['common.today'],
     yesterday: dict['common.yesterday'],
     tomorrow: dict['common.tomorrow'],
@@ -88,6 +91,7 @@ export function I18nProvider({ initialPreference, children }: Props) {
       longDate: (key) => formatLongDate(key, dateNames),
       shortDate: (key) => formatShortDate(key, dateNames),
       relativeDate: (key) => describeDate(key, dateNames),
+      monthName: (key) => monthParts(key, dateNames),
     };
   }, [locale, preference, setPreference]);
 

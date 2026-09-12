@@ -38,9 +38,3 @@ export function formatForInput(value: number | null | undefined): string {
   if (value === null || value === undefined || Number.isNaN(value)) return '';
   return trimZeros(value.toFixed(2));
 }
-
-/** Target shown in the summary, `—` when the target is disabled. */
-export function formatTarget(value: number | null | undefined): string {
-  if (value === null || value === undefined) return '—';
-  return localized(trimZeros(value.toFixed(1)));
-}

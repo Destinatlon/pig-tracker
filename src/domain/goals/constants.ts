@@ -41,6 +41,13 @@ export const GOAL_PROTEIN_PER_KG: Record<EstimatedGoalType, number> = {
   muscleGain: 1.8,
 };
 
+/**
+ * Fraction applied on each side when a single target becomes a range: an estimate that suggests
+ * 2000 kcal is saved as 1800–2200. This is a defaulting rule for estimates and for the migration
+ * of old point targets only — classification compares against the stored boundaries exactly.
+ */
+export const POINT_TARGET_TOLERANCE = 0.1;
+
 /** Plausibility bounds for profile input. Values outside are rejected as typos, not clamped. */
 export const PROFILE_LIMITS = {
   age: { min: 10, max: 120 },

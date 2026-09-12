@@ -6,6 +6,8 @@ export interface DateNames {
   /** Month names in the form used inside a date (genitive in Ukrainian). */
   months: readonly string[];
   monthsShort: readonly string[];
+  /** Month names standing on their own, as in a chart title (nominative in Ukrainian). */
+  monthsStandalone: readonly string[];
   today: string;
   yesterday: string;
   tomorrow: string;
@@ -15,6 +17,7 @@ export const EN_DATE_NAMES: DateNames = {
   weekdays: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
   months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
   monthsShort: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+  monthsStandalone: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
   today: 'today',
   yesterday: 'yesterday',
   tomorrow: 'tomorrow',
@@ -60,6 +63,22 @@ export function formatShortDate(key: DateKey, names: DateNames = EN_DATE_NAMES, 
   const date = parseDateKey(key);
   const base = `${date.getDate()} ${names.monthsShort[date.getMonth()]}`;
   return date.getFullYear() === now.getFullYear() ? base : `${base} ${date.getFullYear()}`;
+}
+
+/** The month a date belongs to, standing on its own: `September`, plus the year separately. */
+export function monthParts(key: DateKey, names: DateNames = EN_DATE_NAMES): { month: string; year: string } {
+  const date = parseDateKey(key);
+  return { month: names.monthsStandalone[date.getMonth()], year: String(date.getFullYear()) };
+}
+
+/** Short weekday name for a chart label, e.g. `Mon`. */
+export function formatWeekdayShort(key: DateKey, names: DateNames = EN_DATE_NAMES): string {
+  return names.weekdays[parseDateKey(key).getDay()].slice(0, 3);
+}
+
+/** Day-of-month number used as a chart label. */
+export function dayOfMonth(key: DateKey): number {
+  return parseDateKey(key).getDate();
 }
 
 export function describeDate(key: DateKey, names: DateNames = EN_DATE_NAMES, now: Date = new Date()): string {

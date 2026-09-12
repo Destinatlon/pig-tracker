@@ -89,9 +89,12 @@ export function mapDayEntry(row: DayEntryRow): DayEntry {
 export interface GoalRow {
   id: number;
   calories: number;
-  protein: number | null;
-  carbs: number | null;
-  fat: number | null;
+  protein_min: number | null;
+  protein_max: number | null;
+  carbs_min: number | null;
+  carbs_max: number | null;
+  fat_min: number | null;
+  fat_max: number | null;
   effective_from: string;
   created_at: string;
 }
@@ -100,9 +103,9 @@ export function mapGoal(row: GoalRow): GoalSettings {
   return {
     id: row.id,
     calories: row.calories,
-    protein: row.protein,
-    carbs: row.carbs,
-    fat: row.fat,
+    protein: { minimum: row.protein_min, maximum: row.protein_max },
+    carbs: { minimum: row.carbs_min, maximum: row.carbs_max },
+    fat: { minimum: row.fat_min, maximum: row.fat_max },
     effectiveFrom: row.effective_from,
     createdAt: row.created_at,
   };

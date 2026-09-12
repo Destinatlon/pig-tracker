@@ -8,7 +8,9 @@ import { NumberField } from '../../components/TextField';
 import { ACTIVITY_LEVELS, ActivityLevel, GOAL_TYPES, GoalType, Sex, SEXES } from '../../domain/goals/constants';
 import { estimateGoals, GoalEstimate } from '../../domain/goals/estimation';
 import { GoalProfile, parseProfileTexts, ProfileErrors, ProfileTexts } from '../../domain/goals/profile';
-import { formatCalories, formatForInput } from '../../domain/nutrition/format';
+import { rangeForBound, rangeShape } from '../../domain/goals/range';
+import { GoalRange } from '../../domain/models';
+import { formatCalories, formatForInput, formatMacro } from '../../domain/nutrition/format';
 import { FieldErrorCode, parseOptionalNonNegative, parseRequiredNonNegative } from '../../domain/numeric';
 import { useI18n } from '../../i18n';
 import type { TranslationKey } from '../../i18n/types';
@@ -17,9 +19,10 @@ import { useTheme } from '../../theme/ThemeProvider';
 
 export interface EstimateResult {
   profile: GoalProfile;
+  /** The suggested daily calorie target, at full precision. */
   calories: number;
-  /** null keeps the protein target the user already has. */
-  protein: number | null;
+  /** The suggested protein as a single "no less than" boundary; null keeps the existing goal. */
+  protein: GoalRange | null;
 }
 
 interface Props {
@@ -131,7 +134,7 @@ export function EstimateGoalsSheet({ initialProfile, currentCalories, onClose, o
       await onApply({
         profile: { ...parsedProfile.value, sex, activityLevel, goalType },
         calories: calories.value,
-        protein: protein.value,
+        protein: protein.value === null ? null : rangeForBound('minimum', protein.value),
       });
       onClose();
     } catch (error) {
@@ -142,6 +145,13 @@ export function EstimateGoalsSheet({ initialProfile, currentCalories, onClose, o
 
   const isCustom = goalType === 'custom';
   const showTargets = profileComplete && (isCustom || estimate !== null);
+
+  // Exactly what will be stored, shown before applying: a calorie target and a protein minimum.
+  const previewCalories = parseRequiredNonNegative(calorieText);
+  const previewProtein = parseOptionalNonNegative(proteinText);
+  const calorieTargetText = previewCalories.ok ? formatCalories(previewCalories.value) : null;
+  const proteinRangeShape =
+    previewProtein.ok && previewProtein.value !== null ? rangeShape(rangeForBound('minimum', previewProtein.value), formatMacro) : null;
 
   return (
     <BottomSheet
@@ -249,6 +259,19 @@ export function EstimateGoalsSheet({ initialProfile, currentCalories, onClose, o
             error={fieldError(t('macro.protein'), targetErrors.protein)}
           />
           {isCustom ? <Text style={[styles.hint, styles.hintAbove, { color: colors.textSecondary }]}>{t('estimate.optionalHint')}</Text> : null}
+          {calorieTargetText ? (
+            <View style={[styles.results, { backgroundColor: colors.surfaceVariant }]}>
+              <Text style={[styles.resultLabel, { color: colors.textSecondary }]}>{t('estimate.rangeNote')}</Text>
+              <Text style={[styles.rangeLine, { color: colors.textPrimary }]}>
+                {t('estimate.calorieRange', { range: calorieTargetText })}
+              </Text>
+              {proteinRangeShape ? (
+                <Text style={[styles.rangeLine, { color: colors.textPrimary }]}>
+                  {t('estimate.proteinRange', { range: t(`range.${proteinRangeShape.key}`, proteinRangeShape.params) })}
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
         </>
       ) : null}
       <Text style={[styles.disclaimer, { color: colors.textSecondary }]}>{t('estimate.disclaimer')}</Text>
@@ -264,6 +287,7 @@ const styles = StyleSheet.create({
   results: { borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.md },
   resultLabel: { ...typography.label },
   resultValue: { ...typography.summary, marginTop: spacing.xs },
+  rangeLine: { ...typography.bodyStrong, marginTop: spacing.xs },
   hint: { ...typography.secondary, marginTop: spacing.xs },
   hintAbove: { marginTop: -spacing.sm, marginBottom: spacing.md },
   disclaimer: { ...typography.secondary, marginTop: spacing.xs },

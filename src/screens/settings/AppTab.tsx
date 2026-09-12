@@ -1,7 +1,7 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { RadioOption } from '../../components/RadioOption';
 import { ThemePreference } from '../../domain/models';
 import { createTranslator, resolveLocale, useI18n } from '../../i18n';
 import { LanguagePreference, LOCALE_NAMES, SUPPORTED_LOCALES } from '../../i18n/types';
@@ -33,7 +33,7 @@ export function AppTab() {
     <ScrollView contentContainerStyle={styles.content}>
       <Text style={[styles.section, { color: colors.textSecondary }]}>{t('app.language')}</Text>
       {LANGUAGES.map((language) => (
-        <RadioRow
+        <RadioOption
           key={language}
           label={languageLabel(language)}
           accessibilityLabel={t('app.languageA11y', { language: languageLabel(language) })}
@@ -43,7 +43,7 @@ export function AppTab() {
       ))}
       <Text style={[styles.section, styles.sectionSpaced, { color: colors.textSecondary }]}>{t('app.theme')}</Text>
       {THEMES.map((theme) => (
-        <RadioRow
+        <RadioOption
           key={theme}
           label={themeLabel(theme)}
           accessibilityLabel={t('app.themeA11y', { theme: themeLabel(theme) })}
@@ -58,22 +58,6 @@ export function AppTab() {
       </View>
       <Text style={[styles.hint, { color: colors.textSecondary }]}>{t('app.privacy')}</Text>
     </ScrollView>
-  );
-}
-
-function RadioRow({ label, accessibilityLabel, selected, onPress }: { label: string; accessibilityLabel: string; selected: boolean; onPress: () => void }) {
-  const { colors } = useTheme();
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="radio"
-      accessibilityState={{ checked: selected }}
-      accessibilityLabel={accessibilityLabel}
-      style={({ pressed }) => [styles.row, { borderBottomColor: colors.divider, opacity: pressed ? 0.6 : 1 }]}
-    >
-      <Text style={[styles.label, { color: colors.textPrimary }]}>{label}</Text>
-      <MaterialCommunityIcons name={selected ? 'radiobox-marked' : 'radiobox-blank'} size={22} color={selected ? colors.accent : colors.textSecondary} />
-    </Pressable>
   );
 }
 

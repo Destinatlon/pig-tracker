@@ -13,6 +13,15 @@ export interface ThemeColors {
   disabled: string;
   bulkEditBackground: string;
   backdrop: string;
+  /** Statistics chart. Colour never carries meaning alone: a legend and text statuses go with it. */
+  statisticsNormal: string;
+  statisticsBelow: string;
+  statisticsAbove: string;
+  statisticsIncomplete: string;
+  statisticsNoGoal: string;
+  statisticsGoalLine: string;
+  statisticsGoalBand: string;
+  statisticsGrid: string;
 }
 
 export const lightColors: ThemeColors = {
@@ -30,6 +39,14 @@ export const lightColors: ThemeColors = {
   disabled: '#9AA3AE',
   bulkEditBackground: '#FFF7E3',
   backdrop: 'rgba(0, 0, 0, 0.45)',
+  statisticsNormal: '#2F6BE0',
+  statisticsBelow: '#C98A06',
+  statisticsAbove: '#CE3B3B',
+  statisticsIncomplete: '#8A5A2B',
+  statisticsNoGoal: '#A7B0BA',
+  statisticsGoalLine: '#5C6774',
+  statisticsGoalBand: 'rgba(92, 103, 116, 0.13)',
+  statisticsGrid: '#DEE3E9',
 };
 
 export const darkColors: ThemeColors = {
@@ -47,6 +64,14 @@ export const darkColors: ThemeColors = {
   disabled: '#5A6572',
   bulkEditBackground: '#2A2416',
   backdrop: 'rgba(0, 0, 0, 0.6)',
+  statisticsNormal: '#7AA2FF',
+  statisticsBelow: '#E4B04E',
+  statisticsAbove: '#F07070',
+  statisticsIncomplete: '#C08A5A',
+  statisticsNoGoal: '#5A6572',
+  statisticsGoalLine: '#9AA5B3',
+  statisticsGoalBand: 'rgba(154, 165, 179, 0.16)',
+  statisticsGrid: '#2B333D',
 };
 
 export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24 } as const;

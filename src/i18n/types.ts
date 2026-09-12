@@ -6,7 +6,7 @@ export type Dictionary = { [K in keyof typeof en]: (typeof en)[K] extends readon
 export type TranslationKey = { [K in keyof Dictionary]: Dictionary[K] extends string ? K : never }[keyof Dictionary];
 
 /** Base of a pluralised key: `${base}_one`, `${base}_few`, `${base}_many` must all exist. */
-export type PluralKeyBase = 'day.copiedEntries' | 'recipe.ingredientCount';
+export type PluralKeyBase = 'day.copiedEntries' | 'recipe.ingredientCount' | 'stats.averageFromDays' | 'stats.incompleteEntries';
 
 export type Locale = 'en' | 'uk';
 export type LanguagePreference = 'system' | Locale;

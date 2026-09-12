@@ -1,7 +1,7 @@
 import { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { DrawerActions, useFocusEffect } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { reorderItems, ReorderableListReorderEvent } from 'react-native-reorderable-list';
 import { Fab } from '../../components/Fab';
@@ -34,7 +34,7 @@ function openDatePicker(initial: DateKey, onPicked: (date: DateKey) => void) {
   });
 }
 
-export function DayScreen({ navigation }: DrawerRouteProps<'Day'>) {
+export function DayScreen({ navigation, route }: DrawerRouteProps<'Day'>) {
   const { colors } = useTheme();
   const { t, tn, longDate, relativeDate } = useI18n();
   const snackbar = useSnackbar();
@@ -70,6 +70,15 @@ export function DayScreen({ navigation }: DrawerRouteProps<'Day'>) {
     },
     [pager],
   );
+
+  // Another destination (Statistics) asked for one exact date. The param is cleared once handled
+  // so returning to this screen later does not drag the user back to that day.
+  const requestedDate = route.params?.date;
+  useEffect(() => {
+    if (!requestedDate) return;
+    goToDay(requestedDate);
+    navigation.setParams({ date: undefined });
+  }, [requestedDate, goToDay, navigation]);
 
   const deleteWithUndo = useCallback(
     async (entry: DayEntry) => {
