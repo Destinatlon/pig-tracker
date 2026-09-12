@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { AccessibilityActionEvent, LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
 import { dayOfMonth, formatWeekdayShort } from '../../domain/dates';
-import { chartScaleMax } from '../../domain/statistics/calculations';
+import { axisTicks, chartScaleMax } from '../../domain/statistics/calculations';
 import { PeriodKind } from '../../domain/statistics/periods';
 import { DayStatistic, MetricKey } from '../../domain/statistics/types';
 import { useI18n } from '../../i18n';
@@ -11,6 +11,8 @@ import { LEGEND_STATUSES, metricFormatter, METRIC_UNIT_KEYS, statusColor, STATUS
 
 /** Plot height in dp; the chart adapts to the available width rather than to a device size. */
 const PLOT_HEIGHT = 200;
+/** Gutter reserved for the value labels, narrow enough to leave a month its 31 columns. */
+const AXIS_WIDTH = 34;
 const ZERO_BAR_HEIGHT = 2;
 /** Month columns are far narrower than their labels, so a label overflows into its blank neighbours. */
 const MONTH_LABEL_WIDTH = 32;
@@ -45,7 +47,8 @@ export function StatisticsChart({ days, kind, metric, selectedDate, onSelect, on
   /** X of the last real touch; absent for a screen-reader activation, which uses the selection. */
   const touchX = useRef<number | null>(null);
 
-  const scaleMax = useMemo(() => chartScaleMax(days), [days]);
+  const scaleMax = useMemo(() => chartScaleMax(days, metric), [days, metric]);
+  const ticks = useMemo(() => axisTicks(metric, scaleMax), [metric, scaleMax]);
   const format = metricFormatter(metric);
   const unit = t(METRIC_UNIT_KEYS[metric]);
 
@@ -97,8 +100,20 @@ export function StatisticsChart({ days, kind, metric, selectedDate, onSelect, on
 
   return (
     <View style={styles.container}>
-      <View style={[styles.plot, { height: PLOT_HEIGHT, borderBottomColor: colors.statisticsGrid }]} onLayout={onLayout}>
-        {width > 0
+      <View style={styles.plotRow}>
+        {/* Fixed gridline values, so the same intake sits at the same height in every period. */}
+        <View style={[styles.axis, { height: PLOT_HEIGHT }]} importantForAccessibility="no-hide-descendants">
+          {ticks.map((tick) => (
+            <Text key={tick} style={[styles.axisLabel, { color: colors.textSecondary, bottom: toY(tick) - 7 }]} numberOfLines={1}>
+              {format(tick)}
+            </Text>
+          ))}
+        </View>
+        <View style={[styles.plot, { height: PLOT_HEIGHT, borderBottomColor: colors.statisticsGrid }]} onLayout={onLayout}>
+          {ticks.map((tick) => (
+            <View key={`grid-${tick}`} pointerEvents="none" style={[styles.gridLine, { bottom: toY(tick), backgroundColor: colors.statisticsGrid }]} />
+          ))}
+          {width > 0
           ? days.map((day, index) => {
               const x = index * slot;
               const { minimum, maximum } = day.goal;
@@ -150,22 +165,23 @@ export function StatisticsChart({ days, kind, metric, selectedDate, onSelect, on
           />
         ) : null}
 
-        <Pressable
-          style={StyleSheet.absoluteFill}
-          onTouchStart={(event) => {
-            touchX.current = event.nativeEvent.locationX;
-          }}
-          onPress={press}
-          accessibilityRole="adjustable"
-          accessibilityLabel={summaryLabel}
-          accessibilityValue={{ text: selectedText }}
-          accessibilityHint={t('stats.chartHint')}
-          accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
-          onAccessibilityAction={onAccessibilityAction}
-        />
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onTouchStart={(event) => {
+              touchX.current = event.nativeEvent.locationX;
+            }}
+            onPress={press}
+            accessibilityRole="adjustable"
+            accessibilityLabel={summaryLabel}
+            accessibilityValue={{ text: selectedText }}
+            accessibilityHint={t('stats.chartHint')}
+            accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+            onAccessibilityAction={onAccessibilityAction}
+          />
+        </View>
       </View>
 
-      <View style={styles.labels}>
+      <View style={[styles.labels, { marginLeft: AXIS_WIDTH }]}>
         {days.map((day, index) => {
           const text = kind === 'week' ? formatWeekdayShort(day.date, dateNames) : monthLabelFor(dayOfMonth(day.date), lastDay);
           const isSelected = day.date === selectedDate;
@@ -230,11 +246,15 @@ export function StatisticsLegend() {
 
 const styles = StyleSheet.create({
   container: { paddingHorizontal: spacing.lg },
+  plotRow: { flexDirection: 'row' },
+  axis: { width: AXIS_WIDTH, position: 'relative' },
+  axisLabel: { ...typography.label, position: 'absolute', right: spacing.xs, textAlign: 'right' },
+  gridLine: { position: 'absolute', left: 0, right: 0, height: StyleSheet.hairlineWidth },
   legend: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, paddingHorizontal: spacing.lg, marginTop: spacing.sm },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   legendSwatch: { width: 10, height: 10, borderRadius: 2 },
   legendLabel: { ...typography.label },
-  plot: { position: 'relative', borderBottomWidth: StyleSheet.hairlineWidth },
+  plot: { flex: 1, position: 'relative', borderBottomWidth: StyleSheet.hairlineWidth },
   band: { position: 'absolute' },
   goalLine: { position: 'absolute', height: 1 },
   bar: { position: 'absolute', bottom: 0, borderTopLeftRadius: 2, borderTopRightRadius: 2 },

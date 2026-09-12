@@ -4,6 +4,7 @@ import { migration002SeedProducts } from './002_seed_products';
 import { migration003Recipes } from './003_recipes';
 import { migration004GoalRanges } from './004_goal_ranges';
 import { migration005SingleMacroBound } from './005_single_macro_bound';
+import { migration006BodyWeights } from './006_body_weights';
 
 export interface Migration {
   version: number;
@@ -18,4 +19,5 @@ export const migrations: readonly Migration[] = [
   migration003Recipes,
   migration004GoalRanges,
   migration005SingleMacroBound,
+  migration006BodyWeights,
 ];

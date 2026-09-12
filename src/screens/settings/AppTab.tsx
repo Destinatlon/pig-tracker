@@ -5,7 +5,7 @@ import { RadioOption } from '../../components/RadioOption';
 import { ThemePreference } from '../../domain/models';
 import { createTranslator, resolveLocale, useI18n } from '../../i18n';
 import { LanguagePreference, LOCALE_NAMES, SUPPORTED_LOCALES } from '../../i18n/types';
-import { rescheduleReminderIfEnabled } from '../../notifications/reminders';
+import { rescheduleReminderIfEnabled, rescheduleWeightReminderIfEnabled } from '../../notifications/reminders';
 import { spacing, typography } from '../../theme/tokens';
 import { useTheme } from '../../theme/ThemeProvider';
 
@@ -24,9 +24,10 @@ export function AppTab() {
 
   const changeLanguage = async (language: LanguagePreference) => {
     await i18n.setPreference(language);
-    // The scheduled reminder carries fixed text, so refresh it in the new language.
+    // Scheduled reminders carry fixed text, so refresh both in the new language.
     const next = createTranslator(resolveLocale(language)).t;
     rescheduleReminderIfEnabled({ title: next('reminder.notificationTitle'), body: next('reminder.notificationBody') }).catch(() => undefined);
+    rescheduleWeightReminderIfEnabled({ title: next('reminder.weightTitle'), body: next('reminder.weightBody') }).catch(() => undefined);
   };
 
   return (

@@ -147,6 +147,11 @@ export interface ReminderSettings {
   minute: number;
 }
 
+/** A reminder that fires once a week. `weekday` is 1 = Sunday .. 7 = Saturday, as expo schedules it. */
+export interface WeeklyReminderSettings extends ReminderSettings {
+  weekday: number;
+}
+
 export function entryDisplayName(entry: { productName: string; variantName: string | null }): string {
   return entry.variantName ? `${entry.productName} — ${entry.variantName}` : entry.productName;
 }

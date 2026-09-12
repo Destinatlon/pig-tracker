@@ -1,5 +1,5 @@
 import { GoalProfile, profileFromJson, profileToJson } from '../../domain/goals/profile';
-import { ReminderSettings, ThemePreference } from '../../domain/models';
+import { ReminderSettings, ThemePreference, WeeklyReminderSettings } from '../../domain/models';
 import { getDb } from '../database';
 
 export const SETTING_KEYS = {
@@ -8,6 +8,10 @@ export const SETTING_KEYS = {
   reminderEnabled: 'reminder_enabled',
   reminderTime: 'reminder_time',
   reminderNotificationId: 'reminder_notification_id',
+  weightReminderEnabled: 'weight_reminder_enabled',
+  weightReminderTime: 'weight_reminder_time',
+  weightReminderWeekday: 'weight_reminder_weekday',
+  weightReminderNotificationId: 'weight_reminder_notification_id',
   goalProfile: 'goal_profile',
 } as const;
 
@@ -60,6 +64,31 @@ export async function getReminderSettings(): Promise<ReminderSettings> {
 export async function setReminderSettings(settings: ReminderSettings): Promise<void> {
   await setSetting(SETTING_KEYS.reminderEnabled, settings.enabled ? '1' : '0');
   await setSetting(SETTING_KEYS.reminderTime, `${settings.hour}:${settings.minute < 10 ? '0' : ''}${settings.minute}`);
+}
+
+/** Sunday 09:00: a weekly weighing is easiest to keep to on a fixed morning. */
+const DEFAULT_WEIGHT_REMINDER: WeeklyReminderSettings = { enabled: false, weekday: 1, hour: 9, minute: 0 };
+
+export async function getWeightReminderSettings(): Promise<WeeklyReminderSettings> {
+  const [enabled, time, weekday] = await Promise.all([
+    getSetting(SETTING_KEYS.weightReminderEnabled),
+    getSetting(SETTING_KEYS.weightReminderTime),
+    getSetting(SETTING_KEYS.weightReminderWeekday),
+  ]);
+  const match = time ? /^(\d{1,2}):(\d{2})$/.exec(time) : null;
+  const parsedWeekday = weekday === null ? Number.NaN : Number(weekday);
+  return {
+    enabled: enabled === '1',
+    weekday: parsedWeekday >= 1 && parsedWeekday <= 7 ? parsedWeekday : DEFAULT_WEIGHT_REMINDER.weekday,
+    hour: match ? Number(match[1]) : DEFAULT_WEIGHT_REMINDER.hour,
+    minute: match ? Number(match[2]) : DEFAULT_WEIGHT_REMINDER.minute,
+  };
+}
+
+export async function setWeightReminderSettings(settings: WeeklyReminderSettings): Promise<void> {
+  await setSetting(SETTING_KEYS.weightReminderEnabled, settings.enabled ? '1' : '0');
+  await setSetting(SETTING_KEYS.weightReminderTime, `${settings.hour}:${settings.minute < 10 ? '0' : ''}${settings.minute}`);
+  await setSetting(SETTING_KEYS.weightReminderWeekday, String(settings.weekday));
 }
 
 /** Current estimation profile (age, sex, height, weight, activity, goal). Missing fields are null. */

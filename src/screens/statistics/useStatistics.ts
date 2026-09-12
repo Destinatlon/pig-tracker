@@ -1,27 +1,32 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useRef, useState } from 'react';
+import { listWeightsInRange } from '../../db/repositories/bodyWeightRepo';
 import { listGoalsForRange } from '../../db/repositories/goalsRepo';
 import { listDailyAggregates } from '../../db/repositories/statisticsRepo';
 import { buildDayStatistics, summarizePeriod } from '../../domain/statistics/calculations';
 import { Period } from '../../domain/statistics/periods';
 import { DailyAggregate, DayStatistic, MetricKey, PeriodSummary } from '../../domain/statistics/types';
 import { GoalSettings, DateKey } from '../../domain/models';
+import { WeightEntry } from '../../domain/weight/trend';
 
 interface Loaded {
   aggregates: DailyAggregate[];
   goals: GoalSettings[];
+  weights: WeightEntry[];
 }
 
 export interface StatisticsState {
   days: DayStatistic[];
   summary: PeriodSummary | null;
+  /** Body-weight measurements inside the period, in calendar order. */
+  weights: WeightEntry[];
   loading: boolean;
   error: unknown;
   reload: () => void;
 }
 
 /**
- * Loads the entries and goal history of one calendar period in two bounded queries and derives
+ * Loads the entries, goal history and weighings of one calendar period in bounded queries and derives
  * the per-day statistics locally, so switching metric costs no I/O. Reloading on focus keeps the
  * chart honest after entries or goals are edited elsewhere, and responses that arrive after the
  * user has moved on are dropped rather than rendered over the newer period.
@@ -39,10 +44,10 @@ export function useStatistics(period: Period, metric: MetricKey, today: DateKey)
       const id = ++requestId.current;
       setLoading(true);
       setError(null);
-      Promise.all([listDailyAggregates(start, end), listGoalsForRange(start, end)])
-        .then(([aggregates, goals]) => {
+      Promise.all([listDailyAggregates(start, end), listGoalsForRange(start, end), listWeightsInRange(start, end)])
+        .then(([aggregates, goals, weights]) => {
           if (id !== requestId.current) return;
-          setLoaded({ aggregates, goals });
+          setLoaded({ aggregates, goals, weights });
           setLoading(false);
         })
         .catch((failure) => {
@@ -62,7 +67,7 @@ export function useStatistics(period: Period, metric: MetricKey, today: DateKey)
 
   const reload = useCallback(() => setAttempt((value) => value + 1), []);
 
-  if (loaded === null) return { days: [], summary: null, loading, error, reload };
+  if (loaded === null) return { days: [], summary: null, weights: [], loading, error, reload };
   const days = buildDayStatistics(period.dates, loaded.aggregates, loaded.goals, metric, today);
-  return { days, summary: summarizePeriod(days, today), loading, error, reload };
+  return { days, summary: summarizePeriod(days, today), weights: loaded.weights, loading, error, reload };
 }

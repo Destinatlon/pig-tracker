@@ -1,6 +1,6 @@
 import { DrawerActions } from '@react-navigation/native';
 import React, { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button } from '../../components/Button';
 import { Chip } from '../../components/Chip';
 import { EmptyState } from '../../components/EmptyState';
@@ -15,7 +15,11 @@ import { useI18n } from '../../i18n';
 import { DrawerRouteProps } from '../../navigation/types';
 import { spacing, typography } from '../../theme/tokens';
 import { useTheme } from '../../theme/ThemeProvider';
+import { getLatestWeight, getWeightForDate } from '../../db/repositories/bodyWeightRepo';
+import { useSnackbar } from '../../components/Snackbar';
+import { BodyWeightCard } from './BodyWeightCard';
 import { DayStatisticSheet } from './DayStatisticSheet';
+import { LogWeightSheet } from './LogWeightSheet';
 import { METRIC_LABEL_KEYS } from './labels';
 import { StatisticsChart, StatisticsLegend } from './StatisticsChart';
 import { StatisticsSummary } from './StatisticsSummary';
@@ -28,14 +32,28 @@ import { useStatistics } from './useStatistics';
 export function StatisticsScreen({ navigation }: DrawerRouteProps<'Statistics'>) {
   const { colors } = useTheme();
   const { t, shortDate, monthName } = useI18n();
+  const snackbar = useSnackbar();
   const [today] = useState(todayKey);
   const [kind, setKind] = useState<PeriodKind>('week');
   const [metric, setMetric] = useState<MetricKey>('calories');
   const [period, setPeriod] = useState<Period>(() => periodContaining('week', today));
   const [selectedDate, setSelectedDate] = useState<DateKey>(today);
   const [detailDate, setDetailDate] = useState<DateKey | null>(null);
+  /** Null while the weighing sheet is closed; it is opened only after today's value is read. */
+  const [logging, setLogging] = useState<{ initialKg: number | null; existing: boolean } | null>(null);
 
-  const { days, summary, loading, error, reload } = useStatistics(period, metric, today);
+  const { days, summary, weights, loading, error, reload } = useStatistics(period, metric, today);
+
+  /** Prefills with today's weighing if there is one, otherwise the most recent one before it. */
+  const openWeightSheet = useCallback(async () => {
+    try {
+      const own = await getWeightForDate(today);
+      const latest = own ?? (await getLatestWeight(today));
+      setLogging({ initialKg: latest?.weightKg ?? null, existing: own !== null });
+    } catch (failure) {
+      Alert.alert(t('weight.couldNotSave'), String(failure));
+    }
+  }, [today, t]);
 
   /** Switching tabs keeps the week/month containing the date the user was looking at. */
   const switchKind = useCallback(
@@ -178,12 +196,27 @@ export function StatisticsScreen({ navigation }: DrawerRouteProps<'Statistics'>)
                 incompleteNote={macroIncomplete ? t('stats.noCompleteMacro', { macro: metricName }) : null}
               />
             ) : null}
+
+            {error === null && !loading ? <BodyWeightCard entries={weights} kind={kind} onLogWeight={openWeightSheet} /> : null}
           </>
         )}
       </ScrollView>
 
       {detailDay ? (
         <DayStatisticSheet day={detailDay} metric={metric} onClose={() => setDetailDate(null)} onOpenDay={openDay} />
+      ) : null}
+      {logging ? (
+        <LogWeightSheet
+          date={today}
+          initialKg={logging.initialKg}
+          existing={logging.existing}
+          onClose={() => setLogging(null)}
+          onSaved={(message) => {
+            setLogging(null);
+            snackbar.show({ message });
+            reload();
+          }}
+        />
       ) : null}
     </View>
   );

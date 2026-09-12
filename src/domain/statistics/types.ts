@@ -20,6 +20,23 @@ export interface DailyAggregate {
   missing: Record<MacroKey, number>;
 }
 
+/**
+ * Labelled gridlines for the value axis. Fixed steps rather than ones derived from the data, so
+ * the same intake sits at the same height whichever period you are looking at.
+ */
+export interface AxisScale {
+  start: number;
+  step: number;
+  end: number;
+}
+
+export const CALORIE_AXIS: AxisScale = { start: 1500, step: 500, end: 4000 };
+export const MACRO_AXIS: AxisScale = { start: 50, step: 50, end: 500 };
+
+export function axisFor(metric: MetricKey): AxisScale {
+  return metric === 'calories' ? CALORIE_AXIS : MACRO_AXIS;
+}
+
 export type StatisticStatus = 'noData' | 'future' | 'incomplete' | 'noGoal' | 'below' | 'normal' | 'above';
 
 /** Statuses that represent a real comparison against a goal range. */

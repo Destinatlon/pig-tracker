@@ -1,5 +1,6 @@
 import { GoalRange, GoalSettings } from '../src/domain/models';
 import {
+  axisTicks,
   buildDayStatistics,
   chartScaleMax,
   classifyDay,
@@ -263,15 +264,31 @@ describe('period summaries', () => {
   });
 });
 
-describe('chart scale', () => {
-  it('leaves headroom above the largest intake or boundary', () => {
-    const days = build([aggregate('2026-09-07', { calories: 3000 })]);
-    expect(chartScaleMax(days)).toBeCloseTo(3300, 6);
+describe('chart scale and axis', () => {
+  it('rounds the top of the scale up to a labelled gridline', () => {
+    const days = build([aggregate('2026-09-07', { calories: 2900 })]);
+    expect(chartScaleMax(days, 'calories')).toBe(3000);
+  });
+
+  it('keeps plain headroom beyond the last gridline', () => {
+    const days = build([aggregate('2026-09-07', { calories: 5000 })]);
+    expect(chartScaleMax(days, 'calories')).toBeCloseTo(5500, 6);
   });
 
   it('never returns zero for an all-zero or empty period with no goal', () => {
     // A disabled macro: no entries and no boundaries, so nothing positive to scale from.
     const days = buildDayStatistics(WEEK.dates, [], [goal('1970-01-01', 2000, range(null, null))], 'protein', TODAY);
-    expect(chartScaleMax(days)).toBeGreaterThan(0);
+    expect(chartScaleMax(days, 'protein')).toBeGreaterThan(0);
+  });
+
+  it('labels calories every 500 from 1500, and macros every 50 from 50', () => {
+    expect(axisTicks('calories', 3000)).toEqual([1500, 2000, 2500, 3000]);
+    expect(axisTicks('calories', 10000)).toEqual([1500, 2000, 2500, 3000, 3500, 4000]);
+    expect(axisTicks('protein', 200)).toEqual([50, 100, 150, 200]);
+    expect(axisTicks('fat', 100)).toEqual([50, 100]);
+  });
+
+  it('shows no gridline under a scale smaller than the first one', () => {
+    expect(axisTicks('calories', 900)).toEqual([]);
   });
 });

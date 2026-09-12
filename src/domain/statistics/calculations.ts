@@ -5,7 +5,7 @@
 import { resolveEffective } from '../goals/history';
 import { NO_GOAL, pointTargetToRange, positionInRange } from '../goals/range';
 import { DateKey, GoalRange, GoalSettings, MacroKey } from '../models';
-import { DailyAggregate, DayStatistic, Extreme, MetricKey, PeriodSummary, StatisticStatus } from './types';
+import { AxisScale, axisFor, DailyAggregate, DayStatistic, Extreme, MetricKey, PeriodSummary, StatisticStatus } from './types';
 
 /** The known total of one metric on a date, plus whether any entry left it unknown. */
 export function metricTotal(aggregate: DailyAggregate, metric: MetricKey): { value: number; missingEntries: number } {
@@ -139,15 +139,33 @@ export function summarizePeriod(days: readonly DayStatistic[], today: DateKey): 
   };
 }
 
-/** Upper bound of the value axis: the largest charted intake or boundary, plus modest headroom. */
-export function chartScaleMax(days: readonly DayStatistic[], headroom = 0.1): number {
+/** Every gridline value of the metric's axis that fits under the given scale. */
+export function axisTicks(metric: MetricKey, scaleMax: number): number[] {
+  const { start, step, end }: AxisScale = axisFor(metric);
+  const ticks: number[] = [];
+  for (let value = start; value <= end; value += step) {
+    if (value <= scaleMax) ticks.push(value);
+  }
+  return ticks;
+}
+
+/**
+ * Upper bound of the value axis. The largest charted intake or goal boundary is rounded up to
+ * the next labelled gridline so the top of the plot is always a number the user can read; a
+ * value beyond the last gridline falls back to plain headroom.
+ */
+export function chartScaleMax(days: readonly DayStatistic[], metric: MetricKey, headroom = 0.1): number {
   let max = 0;
   for (const day of days) {
     if (day.value !== null) max = Math.max(max, day.value);
     if (day.goal.minimum !== null) max = Math.max(max, day.goal.minimum);
     if (day.goal.maximum !== null) max = Math.max(max, day.goal.maximum);
   }
+  const { start, step, end }: AxisScale = axisFor(metric);
   // An all-zero or entirely empty period still needs a positive scale to divide by.
-  if (!(max > 0)) return 1;
+  if (!(max > 0)) return start;
+  for (let value = start; value <= end; value += step) {
+    if (value >= max) return value;
+  }
   return max * (1 + headroom);
 }
