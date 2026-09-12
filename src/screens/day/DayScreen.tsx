@@ -1,12 +1,9 @@
 import { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { DrawerActions, useFocusEffect } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import ReorderableList, { reorderItems, ReorderableListReorderEvent } from 'react-native-reorderable-list';
-import { Button } from '../../components/Button';
-import { EmptyState } from '../../components/EmptyState';
+import { reorderItems, ReorderableListReorderEvent } from 'react-native-reorderable-list';
 import { Fab } from '../../components/Fab';
 import { IconButton } from '../../components/IconButton';
 import { ScreenHeader } from '../../components/ScreenHeader';
@@ -15,13 +12,12 @@ import { copyDay, copyEntryToDate, deleteEntry, reorderEntries, restoreEntry } f
 import { addDays, parseDateKey, toDateKey, todayKey } from '../../domain/dates';
 import { useI18n } from '../../i18n';
 import { DateKey, DayEntry } from '../../domain/models';
-import { calculateDayTotals } from '../../domain/nutrition/calculations';
 import { DrawerRouteProps } from '../../navigation/types';
 import { spacing, typography } from '../../theme/tokens';
 import { useTheme } from '../../theme/ThemeProvider';
 import { BulkEditMode } from './BulkEditMode';
-import { DayEntryRow } from './DayEntryRow';
-import { DaySummary } from './DaySummary';
+import { DayPagerView, useDayPager } from './DayPager';
+import { DayPanel } from './DayPanel';
 import { EntryEditSheet } from './EntryEditSheet';
 import { IncompleteMacrosSheet } from './IncompleteMacrosSheet';
 import { useDay } from './useDay';
@@ -42,24 +38,38 @@ export function DayScreen({ navigation }: DrawerRouteProps<'Day'>) {
   const { colors } = useTheme();
   const { t, tn, longDate, relativeDate } = useI18n();
   const snackbar = useSnackbar();
-  const [date, setDate] = useState<DateKey>(() => todayKey());
-  const { entries, goal, loading, reload, setEntries } = useDay(date);
+  const [initialDate] = useState(todayKey);
+  const pager = useDayPager(initialDate);
+  const { date } = pager;
+  // One hook per mounted panel, in a fixed order; only the recycled slot ever reloads.
+  const day0 = useDay(pager.slots[0].date);
+  const day1 = useDay(pager.slots[1].date);
+  const day2 = useDay(pager.slots[2].date);
+  const days = [day0, day1, day2];
+  const { entries, reload, setEntries } = days[pager.activeIndex];
   const [editing, setEditing] = useState<DayEntry | null>(null);
   const [showIncomplete, setShowIncomplete] = useState(false);
   const [bulkMode, setBulkMode] = useState(false);
 
+  const reload0 = day0.reload;
+  const reload1 = day1.reload;
+  const reload2 = day2.reload;
   useFocusEffect(
     useCallback(() => {
-      reload().catch((error) => console.error('Failed to reload day', error));
-    }, [reload]),
+      const onError = (error: unknown) => console.error('Failed to reload day', error);
+      reload0().catch(onError);
+      reload1().catch(onError);
+      reload2().catch(onError);
+    }, [reload0, reload1, reload2]),
   );
 
-  const totals = useMemo(() => calculateDayTotals(entries), [entries]);
-
-  const goToDay = useCallback((next: DateKey) => {
-    setBulkMode(false);
-    setDate(next);
-  }, []);
+  const goToDay = useCallback(
+    (next: DateKey) => {
+      setBulkMode(false);
+      pager.goToDate(next);
+    },
+    [pager],
+  );
 
   const deleteWithUndo = useCallback(
     async (entry: DayEntry) => {
@@ -129,25 +139,12 @@ export function DayScreen({ navigation }: DrawerRouteProps<'Day'>) {
 
   const openAdd = useCallback(() => navigation.navigate('AddProduct', { date }), [navigation, date]);
 
+  const openIncomplete = useCallback(() => setShowIncomplete(true), []);
+
   const enterBulkMode = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
     setBulkMode(true);
   }, []);
-
-  const daySwipe = useMemo(
-    () =>
-      Gesture.Pan()
-        .activeOffsetX([-40, 40])
-        .failOffsetY([-20, 20])
-        .runOnJS(true)
-        .onEnd((event) => {
-          if (event.translationX < -60 || event.velocityX < -600) goToDay(addDays(date, 1));
-          else if (event.translationX > 60 || event.velocityX > 600) goToDay(addDays(date, -1));
-        }),
-    [date, goToDay],
-  );
-
-  const listPan = useMemo(() => Gesture.Pan().activeOffsetY([-10, 10]), []);
 
   const header = (
     <ScreenHeader
@@ -158,14 +155,16 @@ export function DayScreen({ navigation }: DrawerRouteProps<'Day'>) {
           <Pressable
             onPress={() => openDatePicker(date, goToDay)}
             accessibilityRole="button"
-            accessibilityLabel={`${longDate(date)}. ${t('day.changeDate')}`}
+            accessibilityLabel={`${longDate(pager.visibleDate)}. ${t('day.changeDate')}`}
             style={styles.dateButton}
             hitSlop={4}
           >
             <Text style={[styles.dateText, { color: colors.textPrimary }]} numberOfLines={1} adjustsFontSizeToFit>
-              {longDate(date)}
+              {longDate(pager.visibleDate)}
             </Text>
-            {date !== todayKey() ? <Text style={[styles.dateHint, { color: colors.textSecondary }]}>{relativeDate(date)}</Text> : null}
+            {pager.visibleDate !== todayKey() ? (
+              <Text style={[styles.dateHint, { color: colors.textSecondary }]}>{relativeDate(pager.visibleDate)}</Text>
+            ) : null}
           </Pressable>
           <IconButton icon="chevron-right" accessibilityLabel={t('day.nextDay')} onPress={() => goToDay(addDays(date, 1))} />
         </View>
@@ -195,28 +194,22 @@ export function DayScreen({ navigation }: DrawerRouteProps<'Day'>) {
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       {header}
-      <GestureDetector gesture={daySwipe}>
-        <View style={styles.body}>
-          <DaySummary totals={totals} goal={goal} onWarningPress={() => setShowIncomplete(true)} />
-          <ReorderableList
-            data={entries}
-            keyExtractor={(item) => String(item.id)}
-            renderItem={({ item }) => <DayEntryRow entry={item} onPress={setEditing} onDelete={deleteWithUndo} />}
+      <DayPagerView pager={pager}>
+        {(slot, index) => (
+          <DayPanel
+            entries={days[index].entries}
+            goal={days[index].goal}
+            loading={days[index].loading}
+            active={index === pager.activeIndex}
+            onWarningPress={openIncomplete}
+            onEntryPress={setEditing}
+            onEntryDelete={deleteWithUndo}
             onReorder={onReorder}
-            panGesture={listPan}
-            contentContainerStyle={styles.listContent}
-            keyboardShouldPersistTaps="handled"
-            ListEmptyComponent={
-              loading ? null : (
-                <EmptyState message={t('day.emptyTitle')}>
-                  <Button title={t('day.addProduct')} onPress={openAdd} />
-                  <Button title={t('day.copyAnotherDay')} variant="secondary" onPress={copyAnotherDay} />
-                </EmptyState>
-              )
-            }
+            onAdd={openAdd}
+            onCopyAnotherDay={copyAnotherDay}
           />
-        </View>
-      </GestureDetector>
+        )}
+      </DayPagerView>
       <Fab
         onPress={openAdd}
         onLongPress={enterBulkMode}
@@ -253,12 +246,10 @@ export function DayScreen({ navigation }: DrawerRouteProps<'Day'>) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  body: { flex: 1 },
   dateRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flex: 1 },
   dateButton: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   dateText: { ...typography.title, textAlign: 'center' },
   dateHint: { ...typography.label, textAlign: 'center' },
   modeTag: { ...typography.label, marginRight: spacing.sm },
   rightSpacer: { width: 48 },
-  listContent: { paddingBottom: 96, flexGrow: 1 },
 });
