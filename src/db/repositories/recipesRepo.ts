@@ -1,5 +1,6 @@
 import { nowIso } from '../../domain/dates';
 import { NewRecipeIngredient, NutritionPer100g, Recipe, RecipeIngredient, RecipeWithIngredients } from '../../domain/models';
+import { filterBySearch } from '../../domain/search';
 import { Database, getDb } from '../database';
 import { RecipeIngredientRow, RecipeRow, mapRecipe, mapRecipeIngredient } from './rowMappers';
 
@@ -9,25 +10,14 @@ export interface RecipeListItem {
   ingredients: RecipeIngredient[];
 }
 
-function escapeLike(text: string): string {
-  return text.replace(/[\\%_]/g, (c) => `\\${c}`);
-}
-
 /** Most recently used first, then alphabetical. Ingredients come from one extra query, not N. */
 export async function listRecipes(filter: { search?: string } = {}): Promise<RecipeListItem[]> {
   const db = await getDb();
-  const search = filter.search?.trim();
-  const params: string[] = [];
-  let where = '';
-  if (search) {
-    where = "WHERE name LIKE ? ESCAPE '\\' OR description LIKE ? ESCAPE '\\'";
-    const pattern = `%${escapeLike(search)}%`;
-    params.push(pattern, pattern);
-  }
-  const rows = await db.getAllAsync<RecipeRow>(
-    `SELECT * FROM recipes ${where} ORDER BY last_used_at IS NULL ASC, last_used_at DESC, name COLLATE NOCASE ASC`,
-    params,
+  const all = await db.getAllAsync<RecipeRow>(
+    'SELECT * FROM recipes ORDER BY last_used_at IS NULL ASC, last_used_at DESC, name COLLATE NOCASE ASC',
   );
+  // Each typed word has to appear in the name or the description, in any order.
+  const rows = filterBySearch(all, filter.search ?? '', (row) => [row.name, row.description]);
   if (rows.length === 0) return [];
 
   const ids = rows.map((row) => row.id);

@@ -41,6 +41,7 @@ src/notifications  daily log + weekly weighing reminder scheduling
   product link is kept only so the user can explicitly refresh one. Per-100-g values assume an evenly mixed dish
   and must always be presented as approximate. A macro any ingredient leaves unknown stays `null` for the whole
   recipe — never a partial sum passed off as complete. Logging a recipe writes an ordinary `day_entries` snapshot.
+- Free-text search matches word by word, in any order, via `src/domain/search.ts` — not in SQL. SQLite's `LIKE` only folds ASCII case, so it would match `капуста` inside "Квашена капуста" but miss "Капуста білокачанна"; matching in JS gets Unicode case folding and any-order terms for free. Repositories still do the bounded fetching and the exact filters (category, ids).
 - No hard-coded user-facing strings: add a key to `src/i18n/en.ts` and `uk.ts`, use `t('key')` (or `tn` for plurals). Validation returns error codes; `fieldError(label, code)` renders them. Dates go through `longDate`/`shortDate`/`relativeDate` from `useI18n`.
 
 ## Commands

@@ -1,5 +1,6 @@
 import { nowIso } from '../../domain/dates';
 import { LibraryItem, NutritionPer100g } from '../../domain/models';
+import { filterBySearch } from '../../domain/search';
 import { getDb } from '../database';
 import { LibraryItemRow, mapLibraryItem } from './rowMappers';
 
@@ -20,28 +21,18 @@ export interface LibraryFilter {
   categoryId?: number | null;
 }
 
-function escapeLike(text: string): string {
-  return text.replace(/[\\%_]/g, (c) => `\\${c}`);
-}
-
-/** Flat list of every variant (default variants included) matching the optional search/category filter. */
+/**
+ * Flat list of every variant (default variants included) matching the optional search/category
+ * filter. The category narrows the query; the text is matched in `src/domain/search`, which
+ * handles word order and non-ASCII case as SQLite's LIKE cannot.
+ */
 export async function listLibrary(filter: LibraryFilter = {}): Promise<LibraryItem[]> {
   const db = await getDb();
-  const where: string[] = [];
-  const params: (string | number)[] = [];
-  const search = filter.search?.trim();
-  if (search) {
-    const pattern = `%${escapeLike(search)}%`;
-    where.push("(p.name LIKE ? ESCAPE '\\' OR v.name LIKE ? ESCAPE '\\')");
-    params.push(pattern, pattern);
-  }
-  if (filter.categoryId != null) {
-    where.push('p.category_id = ?');
-    params.push(filter.categoryId);
-  }
-  const sql = `${LIBRARY_SELECT} ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ${LIBRARY_ORDER}`;
-  const rows = await db.getAllAsync<LibraryItemRow>(sql, params);
-  return rows.map(mapLibraryItem);
+  const where = filter.categoryId != null ? 'WHERE p.category_id = ?' : '';
+  const params = filter.categoryId != null ? [filter.categoryId] : [];
+  const rows = await db.getAllAsync<LibraryItemRow>(`${LIBRARY_SELECT} ${where} ${LIBRARY_ORDER}`, params);
+  const items = rows.map(mapLibraryItem);
+  return filterBySearch(items, filter.search ?? '', (item) => [item.productName, item.variantName]);
 }
 
 export async function getLibraryItemByVariantId(variantId: number): Promise<LibraryItem | null> {
@@ -58,14 +49,9 @@ export async function listVariantsForProduct(productId: number): Promise<Library
 
 /** Products whose name resembles the typed name; used for the subtle suggestion on the Manual tab. */
 export async function findLibraryItemsByName(name: string, limit = 3): Promise<LibraryItem[]> {
-  const trimmed = name.trim();
-  if (trimmed.length < 2) return [];
-  const db = await getDb();
-  const rows = await db.getAllAsync<LibraryItemRow>(
-    `${LIBRARY_SELECT} WHERE p.name LIKE ? ESCAPE '\\' ${LIBRARY_ORDER} LIMIT ?`,
-    [`%${escapeLike(trimmed)}%`, limit],
-  );
-  return rows.map(mapLibraryItem);
+  if (name.trim().length < 2) return [];
+  const matches = await listLibrary({ search: name });
+  return matches.slice(0, limit);
 }
 
 /** Recently used library items, derived from day entries that still reference an existing variant. */
