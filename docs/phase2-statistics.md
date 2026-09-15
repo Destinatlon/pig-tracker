@@ -6,8 +6,8 @@ This document is the implementation specification for the Phase 2 user-facing st
 
 It supplements:
 
-- `offline_calorie_tracker_phase1_ai_agent_spec.md`
-- `offline_calorie_tracker_phase1_design_ai_agent_spec.md`
+- `docs/phase1-data-and-behaviour.md`
+- `docs/phase1-design.md`
 - `CLAUDE.md`
 
 For the work described here, this document explicitly overrides the Phase 1 statements that charts, analytics, and day/week/month diagrams are out of scope. All other Phase 1 rules remain in force unless this document explicitly changes them.

@@ -1,8 +1,8 @@
 # Pig Tracker — offline Android calorie tracker (Phase 1 + recipes)
 
-Specs: `offline_calorie_tracker_phase1_ai_agent_spec.md` (data/behaviour) and
-`offline_calorie_tracker_phase1_design_ai_agent_spec.md` (UI/UX + RN coding rules). Read both before changing behaviour.
-`offline_calorie_tracker_phase2_statistics_ai_agent_spec.md` covers the Statistics screen and goal ranges; for that work it
+Specs: `docs/phase1-data-and-behaviour.md` (data/behaviour) and
+`docs/phase1-design.md` (UI/UX + RN coding rules). Read both before changing behaviour.
+`docs/phase2-statistics.md` covers the Statistics screen and goal ranges; for that work it
 overrides the Phase 1 "charts and analytics are out of scope" statements.
 The recipe system is listed as out of scope in the Phase 1 spec; the project owner has since moved it into scope,
 so the spec's section 25 no longer applies to it. Everything else in that list still does.
