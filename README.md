@@ -1,5 +1,7 @@
 # Pig Tracker
 
+[![CI](https://github.com/Destinatlon/pig-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/Destinatlon/pig-tracker/actions/workflows/ci.yml)
+
 A fully offline calorie and macro tracker for Android. No account, no backend, no network calls —
 every byte lives in a local SQLite database on the phone, and the whole app works in airplane mode.
 
